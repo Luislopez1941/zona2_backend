@@ -37,8 +37,9 @@ export class CreateSecUserDto {
   @IsEmail()
   email: string;
 
+  @IsOptional()
   @IsString()
-  pswd: string;
+  pswd?: string;
 
   @IsOptional()
   @IsString()
