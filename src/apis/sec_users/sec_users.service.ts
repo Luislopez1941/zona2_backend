@@ -93,33 +93,69 @@ export class SecUsersService {
     try {
       // Crear usuario y zona inicial en una transacción
       const user = await this.prisma.$transaction(async (tx) => {
+        // Preparar datos del usuario
+        const userData: Prisma.sec_usersCreateInput = {
+          RunnerUID: runnerUID,
+          AliasRunner: aliasRunner,
+          name: createSecUserDto.name,
+          login: createSecUserDto.login,
+          phone: createSecUserDto.phone,
+          email: createSecUserDto.email,
+          pswd: password,
+          RFC: createSecUserDto.RFC,
+          Ciudad: createSecUserDto.Ciudad,
+          Estado: createSecUserDto.Estado,
+          Pais: createSecUserDto.Pais,
+          TipoMembresia: createSecUserDto.TipoMembresia,
+          DisciplinaPrincipal: createSecUserDto.DisciplinaPrincipal,
+          FechaRenovacionMembresia: fechaRenovacionMembresia,
+          FechaUltimaZ2: fechaUltimaZ2,
+          fechaNacimiento: createSecUserDto.fechaNacimiento 
+            ? new Date(createSecUserDto.fechaNacimiento) 
+            : null,
+          Genero: createSecUserDto.Genero,
+          Peso: createSecUserDto.Peso,
+          Estatura: createSecUserDto.Estatura,
+          EmergenciaContacto: createSecUserDto.EmergenciaContacto,
+          EmergenciaCelular: createSecUserDto.EmergenciaCelular,
+          EmergenciaParentesco: createSecUserDto.EmergenciaParentesco,
+          equipoID: createSecUserDto.equipoID,
+          RunnerUIDRef: createSecUserDto.RunnerUIDRef,
+          active: createSecUserDto.active,
+          activation_code: createSecUserDto.activation_code,
+          priv_admin: createSecUserDto.priv_admin,
+          mfa: createSecUserDto.mfa,
+          role: createSecUserDto.role,
+          // Inicializar campos de zonas
+          Z2TotalHistorico: createSecUserDto.Z2TotalHistorico
+            ? BigInt(createSecUserDto.Z2TotalHistorico)
+            : BigInt(puntosIniciales),
+          Z2Recibidas30d: createSecUserDto.Z2Recibidas30d ?? puntosIniciales,
+          WalletPuntos: createSecUserDto.WalletPuntos ?? puntosIniciales,
+          WalletPuntosI: createSecUserDto.WalletPuntosI,
+          WalletSaldoMXN: createSecUserDto.WalletSaldoMXN,
+          GananciasAcumuladasMXN: createSecUserDto.GananciasAcumuladasMXN,
+          InvitacionesTotales: createSecUserDto.InvitacionesTotales,
+          InvitacionesMensuales: createSecUserDto.InvitacionesMensuales,
+          SuscripcionMXN: createSecUserDto.SuscripcionMXN,
+          PorcentajeCumplimiento: createSecUserDto.PorcentajeCumplimiento,
+          NivelRunner: createSecUserDto.NivelRunner,
+          CFDIEmitido: createSecUserDto.CFDIEmitido,
+          StravaAthleteID: createSecUserDto.StravaAthleteID
+            ? BigInt(createSecUserDto.StravaAthleteID)
+            : null,
+          GarminUserID: createSecUserDto.GarminUserID,
+          Z2Otorgadas30d: createSecUserDto.Z2Otorgadas30d,
+          Actividades30d: createSecUserDto.Actividades30d,
+          NivelMensual: createSecUserDto.NivelMensual,
+          FechaUltimaActividad: createSecUserDto.FechaUltimaActividad
+            ? new Date(createSecUserDto.FechaUltimaActividad)
+            : null,
+        };
+
         // Crear usuario
         const newUser = await tx.sec_users.create({
-          data: {
-            RunnerUID: runnerUID,
-            AliasRunner: aliasRunner,
-            name: createSecUserDto.name,
-            login: createSecUserDto.login,
-            phone: createSecUserDto.phone,
-            email: createSecUserDto.email,
-            pswd: password,
-            RFC: createSecUserDto.RFC,
-            Ciudad: createSecUserDto.Ciudad,
-            Pais: createSecUserDto.Pais,
-            TipoMembresia: createSecUserDto.TipoMembresia,
-            FechaRenovacionMembresia: fechaRenovacionMembresia,
-            FechaUltimaZ2: fechaUltimaZ2,
-            fechaNacimiento: createSecUserDto.fechaNacimiento 
-              ? new Date(createSecUserDto.fechaNacimiento) 
-              : null,
-            Genero: createSecUserDto.Genero,
-            equipoID: createSecUserDto.equipoID,
-            RunnerUIDRef: createSecUserDto.RunnerUIDRef,
-            // Inicializar campos de zonas
-            Z2TotalHistorico: BigInt(puntosIniciales),
-            Z2Recibidas30d: puntosIniciales,
-            WalletPuntos: puntosIniciales,
-          },
+          data: userData,
         });
 
         // Crear zona inicial (se refiere a sí mismo)
@@ -175,9 +211,55 @@ export class SecUsersService {
   async update(login: string, updateSecUserDto: UpdateSecUserDto) {
     await this.findOne(login); // Verificar que el usuario existe
 
+    // Extraer campos que necesitan conversión especial
+    const {
+      StravaAthleteID,
+      Z2TotalHistorico,
+      FechaUltimaActividad,
+      FechaRenovacionMembresia,
+      FechaUltimaZ2,
+      fechaNacimiento,
+      ...restFields
+    } = updateSecUserDto;
+
+    // Construir el objeto de actualización excluyendo campos problemáticos
+    const updateData: Prisma.sec_usersUpdateInput = {
+      ...restFields,
+    };
+
+    // Convertir campos BigInt de string a BigInt si están presentes
+    if (StravaAthleteID !== undefined) {
+      updateData.StravaAthleteID = StravaAthleteID
+        ? BigInt(StravaAthleteID)
+        : null;
+    }
+
+    if (Z2TotalHistorico !== undefined) {
+      updateData.Z2TotalHistorico = Z2TotalHistorico
+        ? BigInt(Z2TotalHistorico)
+        : BigInt(0);
+    }
+
+    // Convertir fechas de string a Date si están presentes
+    if (FechaUltimaActividad) {
+      updateData.FechaUltimaActividad = new Date(FechaUltimaActividad);
+    }
+
+    if (FechaRenovacionMembresia) {
+      updateData.FechaRenovacionMembresia = new Date(FechaRenovacionMembresia);
+    }
+
+    if (FechaUltimaZ2) {
+      updateData.FechaUltimaZ2 = new Date(FechaUltimaZ2);
+    }
+
+    if (fechaNacimiento) {
+      updateData.fechaNacimiento = new Date(fechaNacimiento);
+    }
+
     return this.prisma.sec_users.update({
       where: { login: login },
-      data: updateSecUserDto,
+      data: updateData,
     });
   }
 
