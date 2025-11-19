@@ -1,0 +1,93 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model actividades {
+  actID           Int      @id @default(autoincrement())
+  RunnerUID       String   @db.VarChar(36)
+  plataforma      String   @db.Char(1)
+  titulo          String   @db.VarChar(150)
+  fechaActividad  DateTime @db.DateTime
+  DistanciaKM     Decimal  @db.Decimal(6, 2)
+  RitmoMinKm      String   @db.VarChar(10)
+  Duracion        String   @db.VarChar(10)
+  Origen          String   @db.VarChar(20)
+  Ciudad          String   @db.VarChar(20)
+  Pais            String   @db.VarChar(20)
+  enlace          String   @db.VarChar(255)
+
+  @@map("actividades")
+}
+
+model sec_users {
+  RunnerUID                String    @default(uuid()) @db.Char(36)
+  RunnerUIDRef             String?   @db.Char(36)
+  AliasRunner              String?   @db.VarChar(50)
+  name                     String    @db.VarChar(255)
+  login                    String    @id @db.VarChar(255)
+  phone                    String    @db.VarChar(65)
+  email                    String    @db.VarChar(255)
+  pswd                     String    @db.VarChar(255)
+  RFC                      String?   @db.VarChar(13)
+  Ciudad                   String?   @db.VarChar(50)
+  Pais                     String?   @db.VarChar(50)
+  TipoMembresia            String?   @db.Char(1)
+  FechaUltimaActividad     DateTime? @db.DateTime
+  FechaRegistro            DateTime  @default(now()) @db.Timestamp(0)
+  FechaActualizacion       DateTime  @updatedAt @db.Timestamp(0)
+  InvitacionesTotales      Int       @default(0)
+  SuscripcionMXN           Decimal?  @db.Decimal(10, 2)
+  WalletPuntos              Int?
+  WalletPuntosI             Int?
+  WalletSaldoMXN           Decimal   @default(0.00) @db.Decimal(10, 2)
+  GananciasAcumuladasMXN   Decimal   @default(0.00) @db.Decimal(10, 2)
+  InvitacionesMensuales    Int       @default(0)
+  PorcentajeCumplimiento   Decimal   @default(0.00) @db.Decimal(5, 2)
+  NivelRunner              String?   @db.Char(1)
+  FechaRenovacionMembresia DateTime? @db.Date
+  CFDIEmitido              Boolean   @default(false) @db.TinyInt
+  StravaAthleteID          BigInt?
+  GarminUserID             String?   @db.VarChar(64)
+  Z2TotalHistorico         BigInt    @default(0)
+  Z2Recibidas30d           Int       @default(0)
+  Z2Otorgadas30d           Int       @default(0)
+  Actividades30d           Int       @default(0)
+  NivelMensual             String?   @db.VarChar(10)
+  FechaUltimaZ2            DateTime? @db.DateTime
+  fechaNacimiento          DateTime? @db.Date
+  Genero                   String?   @db.Char(1)
+  equipoID                 String?   @db.VarChar(36)
+  active                   String?   @db.Char(1)
+  activation_code          String?   @db.VarChar(32)
+  priv_admin               String?   @db.Char(1)
+  mfa                      String?   @db.VarChar(255)
+  picture                  Bytes?    @db.Blob
+  role                     String?   @db.VarChar(128)
+  pswd_last_updated        DateTime? @updatedAt @db.Timestamp(0)
+  mfa_last_updated         DateTime? @default(now()) @db.DateTime
+
+  @@map("sec_users")
+}
+
+model zonas {
+  zonaID      Int      @id @default(autoincrement())
+  RunnerUID   String   @db.VarChar(36)
+  RunnerUIDRef String @db.VarChar(36)
+  puntos     Int
+  motivo     String   @db.Char(2)
+  origen     String   @db.Char(2)
+  fecha      DateTime @db.DateTime
+
+  @@map("zonas")
+}
