@@ -75,10 +75,26 @@ export class SecUsersService {
       where: { email: createSecUserDto.email },
     });
 
-    if (existingUserByEmail) {
-      throw new ConflictException(
-        `El correo '${createSecUserDto.email}' ya está registrado`,
-      );
+    // Verificar si el teléfono ya existe
+    const existingUserByPhone = await this.prisma.sec_users.findFirst({
+      where: { phone: createSecUserDto.phone },
+    });
+
+    // Si el email o teléfono ya existen, devolver warning
+    if (existingUserByEmail || existingUserByPhone) {
+      const warnings: string[] = [];
+      if (existingUserByEmail) {
+        warnings.push(`El correo '${createSecUserDto.email}' ya está registrado`);
+      }
+      if (existingUserByPhone) {
+        warnings.push(`El teléfono '${createSecUserDto.phone}' ya está registrado`);
+      }
+
+      return {
+        message: warnings.join(' y '),
+        status: 'warning',
+        warnings: warnings,
+      };
     }
 
     // Generar RunnerUID con formato Z2R...
