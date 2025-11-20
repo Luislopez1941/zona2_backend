@@ -67,7 +67,21 @@ export class SecUsersService {
     // Si el correo ya existe, devolver warning
     if (existingUserByEmail) {
       return {
-        message: `El correo '${createSecUserDto.email}' ya está registrado`,
+        message: 'Correo existente',
+        status: 'warning',
+        user: undefined,
+      };
+    }
+
+    // Verificar si el teléfono ya existe
+    const existingUserByPhone = await this.prisma.sec_users.findFirst({
+      where: { phone: createSecUserDto.phone },
+    });
+
+    // Si el teléfono ya existe, devolver warning
+    if (existingUserByPhone) {
+      return {
+        message: 'Numero existente',
         status: 'warning',
         user: undefined,
       };
