@@ -60,13 +60,24 @@ export class SecUsersService {
 
   async create(createSecUserDto: CreateSecUserDto) {
     // Verificar si el login ya existe
-    const existingUser = await this.prisma.sec_users.findUnique({
+    const existingUserByLogin = await this.prisma.sec_users.findUnique({
       where: { login: createSecUserDto.login },
     });
 
-    if (existingUser) {
+    if (existingUserByLogin) {
       throw new ConflictException(
         `El usuario con login '${createSecUserDto.login}' ya existe`,
+      );
+    }
+
+    // Verificar si el email ya existe
+    const existingUserByEmail = await this.prisma.sec_users.findFirst({
+      where: { email: createSecUserDto.email },
+    });
+
+    if (existingUserByEmail) {
+      throw new ConflictException(
+        `El correo '${createSecUserDto.email}' ya está registrado`,
       );
     }
 
@@ -173,7 +184,11 @@ export class SecUsersService {
         return newUser;
       });
 
-      return user;
+      return {
+        message: 'Usuario creado exitosamente',
+        status: 'success',
+        user: user,
+      };
     } catch (error) {
       // Manejar errores de Prisma (como violación de restricción única)
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -209,7 +224,20 @@ export class SecUsersService {
   }
 
   async update(login: string, updateSecUserDto: UpdateSecUserDto) {
-    await this.findOne(login); // Verificar que el usuario existe
+    const existingUser = await this.findOne(login); // Verificar que el usuario existe
+
+    // Verificar si se está actualizando el email y si ya existe
+    if (updateSecUserDto.email && updateSecUserDto.email !== existingUser.email) {
+      const existingUserByEmail = await this.prisma.sec_users.findFirst({
+        where: { email: updateSecUserDto.email },
+      });
+
+      if (existingUserByEmail && existingUserByEmail.login !== login) {
+        throw new ConflictException(
+          `El correo '${updateSecUserDto.email}' ya está registrado`,
+        );
+      }
+    }
 
     // Extraer campos que necesitan conversión especial
     const {
