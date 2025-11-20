@@ -288,7 +288,7 @@ export class SecUsersService {
       }
 
       const z2TotalOtorga = Number(otorgaUser.Z2TotalHistorico) + 50;
-      const z2Recibidas30dOtorga = otorgaUser.Z2Recibidas30d + 50;
+      const z2Recibidas30dOtorga = (otorgaUser.Z2Recibidas30d || 0) + 50;
       const walletPuntosOtorga = (otorgaUser.WalletPuntos || 0) + 50;
 
       await tx.sec_users.update({
@@ -317,7 +317,7 @@ export class SecUsersService {
       }
 
       const z2TotalRecibe = Number(recibeUser.Z2TotalHistorico) + 100;
-      const z2Recibidas30dRecibe = recibeUser.Z2Recibidas30d + 100;
+      const z2Recibidas30dRecibe = (recibeUser.Z2Recibidas30d || 0) + 100;
       const walletPuntosRecibe = (recibeUser.WalletPuntos || 0) + 100;
 
       await tx.sec_users.update({

@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,18 +8,18 @@ datasource db {
 }
 
 model actividades {
-  actID           Int      @id @default(autoincrement())
-  RunnerUID       String   @db.VarChar(36)
-  plataforma      String   @db.Char(1)
-  titulo          String   @db.VarChar(150)
-  fechaActividad  DateTime @db.DateTime
-  DistanciaKM     Decimal  @db.Decimal(6, 2)
-  RitmoMinKm      String   @db.VarChar(10)
-  Duracion        String   @db.VarChar(10)
-  Origen          String   @db.VarChar(20)
-  Ciudad          String   @db.VarChar(20)
-  Pais            String   @db.VarChar(20)
-  enlace          String   @db.VarChar(255)
+  actID          Int      @id @default(autoincrement())
+  RunnerUID      String   @db.VarChar(36)
+  plataforma     String   @db.Char(1)
+  titulo         String   @db.VarChar(150)
+  fechaActividad DateTime @db.DateTime(0)
+  DistanciaKM    Decimal  @db.Decimal(6, 2)
+  RitmoMinKm     String   @db.VarChar(10)
+  Duracion       String   @db.VarChar(10)
+  Origen         String   @db.VarChar(20)
+  Ciudad         String   @db.VarChar(20)
+  Pais           String   @db.VarChar(20)
+  enlace         String   @db.VarChar(255)
 
   @@map("actividades")
 }
@@ -42,28 +36,28 @@ model sec_users {
   pswd                     String    @db.VarChar(255)
   RFC                      String?   @db.VarChar(13)
   TipoMembresia            String?   @db.Char(1)
-  FechaUltimaActividad     DateTime? @db.DateTime
+  FechaUltimaActividad     DateTime? @db.DateTime(0)
   FechaRegistro            DateTime  @default(now()) @db.Timestamp(0)
-  FechaActualizacion       DateTime  @updatedAt @db.Timestamp(0)
-  InvitacionesTotales      Int       @default(0)
+  FechaActualizacion       DateTime  @default(now()) @updatedAt @db.Timestamp(0)
+  InvitacionesTotales      Int?      @default(0)
   SuscripcionMXN           Decimal?  @db.Decimal(10, 2)
-  WalletPuntos              Int?
-  WalletPuntosI             Int?
-  WalletSaldoMXN           Decimal   @default(0.00) @db.Decimal(10, 2)
-  GananciasAcumuladasMXN   Decimal   @default(0.00) @db.Decimal(10, 2)
-  InvitacionesMensuales    Int       @default(0)
-  PorcentajeCumplimiento   Decimal   @default(0.00) @db.Decimal(5, 2)
+  WalletPuntos             Int?
+  WalletPuntosI            Int?
+  WalletSaldoMXN           Decimal?  @default(0.00) @db.Decimal(10, 2)
+  GananciasAcumuladasMXN   Decimal?  @default(0.00) @db.Decimal(10, 2)
+  InvitacionesMensuales    Int?      @default(0)
+  PorcentajeCumplimiento   Decimal?  @default(0.00) @db.Decimal(5, 2)
   NivelRunner              String?   @db.Char(1)
   FechaRenovacionMembresia DateTime? @db.Date
-  CFDIEmitido              Boolean   @default(false) @db.TinyInt
+  CFDIEmitido              Boolean?  @default(false)
   StravaAthleteID          BigInt?
   GarminUserID             String?   @db.VarChar(64)
-  Z2TotalHistorico         BigInt    @default(0)
-  Z2Recibidas30d           Int       @default(0)
-  Z2Otorgadas30d           Int       @default(0)
-  Actividades30d           Int       @default(0)
+  Z2TotalHistorico         BigInt?   @default(0)
+  Z2Recibidas30d           Int?      @default(0)
+  Z2Otorgadas30d           Int?      @default(0)
+  Actividades30d           Int?      @default(0)
   NivelMensual             String?   @db.VarChar(10)
-  FechaUltimaZ2            DateTime? @db.DateTime
+  FechaUltimaZ2            DateTime? @db.DateTime(0)
   fechaNacimiento          DateTime? @db.Date
   Genero                   String?   @db.Char(1)
   Peso                     String?   @db.Char(2)
@@ -75,26 +69,114 @@ model sec_users {
   EmergenciaCelular        String?   @db.Char(64)
   EmergenciaParentesco     String?   @db.Char(64)
   equipoID                 String?   @db.VarChar(36)
-  active                   String?   @db.Char(1)
+  active                   String?   @db.VarChar(1)
   activation_code          String?   @db.VarChar(32)
-  priv_admin               String?   @db.Char(1)
+  priv_admin               String?   @db.VarChar(1)
   mfa                      String?   @db.VarChar(255)
   picture                  Bytes?    @db.Blob
   role                     String?   @db.VarChar(128)
-  pswd_last_updated        DateTime? @updatedAt @db.Timestamp(0)
-  mfa_last_updated         DateTime? @default(now()) @db.DateTime
+  pswd_last_updated        DateTime? @default(now()) @updatedAt @db.Timestamp(0)
+  mfa_last_updated         DateTime? @default(now()) @db.DateTime(0)
 
   @@map("sec_users")
 }
 
 model zonas {
-  zonaID      Int      @id @default(autoincrement())
-  RunnerUID   String   @db.VarChar(36)
-  RunnerUIDRef String @db.VarChar(36)
-  puntos     Int
-  motivo     String   @db.Char(2)
-  origen     String   @db.Char(2)
-  fecha      DateTime @db.DateTime
+  zonaID       Int      @id @default(autoincrement())
+  RunnerUID    String   @db.VarChar(36)
+  RunnerUIDRef String   @db.VarChar(36)
+  puntos       Int
+  motivo       String   @db.Char(2)
+  origen       String   @db.Char(2)
+  fecha        DateTime @db.DateTime(0)
 
   @@map("zonas")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model establecimientos {
+  EstablecimientoID            Int                      @id @default(autoincrement()) @db.UnsignedInt
+  NombreComercial              String                   @db.VarChar(255)
+  Giro                         String?                  @db.VarChar(150)
+  Descripcion                  String?                  @db.VarChar(255)
+  Ciudad                       String?                  @db.VarChar(100)
+  Estado                       String?                  @db.VarChar(100)
+  Pais                         String?                  @default("México") @db.VarChar(100)
+  Direccion                    String?                  @db.VarChar(255)
+  Latitud                      Decimal?                 @db.Decimal(10, 7)
+  Longitud                     Decimal?                 @db.Decimal(10, 7)
+  UrlSitio                     String?                  @db.VarChar(500)
+  UrlLogo                      String?                  @db.VarChar(500)
+  AceptaPuntosZ2               Boolean                  @default(true)
+  MaxPuntosZ2                  Int?                     @db.UnsignedInt
+  MaxDescuentoZ2               Int?                     @db.UnsignedInt
+  PuntosEquivalencia           Int?                     @db.UnsignedInt
+  EquivalenciaDescuentoImporte Decimal?                 @db.Decimal(10, 2)
+  Estatus                      establecimientos_Estatus @default(pendiente)
+  FechaAlta                    DateTime                 @default(now()) @db.Timestamp(0)
+  FechaActualiza               DateTime                 @default(now()) @db.Timestamp(0)
+
+  @@map("establecimientos")
+}
+
+enum subscriptions_PlanCode {
+  Runner
+  Pacer
+  Visitante
+  Organizador
+}
+
+enum subscriptions_BillingCycle {
+  Monthly
+  Quarterly
+  Yearly
+}
+
+enum subscriptions_Status {
+  Pending
+  Active
+  PastDue
+  Canceled
+  Expired
+  Trial
+}
+
+enum establecimientos_Estatus {
+  pendiente
+  activo
+  suspendido
+  baja
+}
+
+enum subscriptions_PaymentMethod {
+  Card
+  Bank
+  Transfer
+  Wallet
+  Cash
+  Other
+}
+
+enum subscriptions_PaymentProvider {
+  Stripe
+  Conekta
+  OpenPay
+  PayPal
+  Bank
+  Internal
+  Other
+}
+
+enum organizadores_Estatus {
+  pendiente
+  activo
+  suspendido
+  baja
+}
+
+enum eventos_Estatus {
+  borrador
+  publicado
+  cerrado
+  cancelado
 }
