@@ -59,41 +59,30 @@ export class SecUsersService {
   }
 
   async create(createSecUserDto: CreateSecUserDto) {
+    // Verificar si el email ya existe
+    const existingUserByEmail = await this.prisma.sec_users.findFirst({
+      where: { email: createSecUserDto.email },
+    });
+
+    // Si el correo ya existe, devolver warning
+    if (existingUserByEmail) {
+      return {
+        message: `El correo '${createSecUserDto.email}' ya está registrado`,
+        status: 'warning',
+        user: undefined,
+      };
+    }
+
     // Verificar si el login ya existe
     const existingUserByLogin = await this.prisma.sec_users.findUnique({
       where: { login: createSecUserDto.login },
     });
 
     if (existingUserByLogin) {
-      throw new ConflictException(
-        `El usuario con login '${createSecUserDto.login}' ya existe`,
-      );
-    }
-
-    // Verificar si el email ya existe
-    const existingUserByEmail = await this.prisma.sec_users.findFirst({
-      where: { email: createSecUserDto.email },
-    });
-
-    // Verificar si el teléfono ya existe
-    const existingUserByPhone = await this.prisma.sec_users.findFirst({
-      where: { phone: createSecUserDto.phone },
-    });
-
-    // Si el email o teléfono ya existen, devolver warning
-    if (existingUserByEmail || existingUserByPhone) {
-      const warnings: string[] = [];
-      if (existingUserByEmail) {
-        warnings.push(`El correo '${createSecUserDto.email}' ya está registrado`);
-      }
-      if (existingUserByPhone) {
-        warnings.push(`El teléfono '${createSecUserDto.phone}' ya está registrado`);
-      }
-
       return {
-        message: warnings.join(' y '),
+        message: `El usuario con login '${createSecUserDto.login}' ya existe`,
         status: 'warning',
-        warnings: warnings,
+        user: undefined,
       };
     }
 
