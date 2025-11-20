@@ -115,13 +115,13 @@ export class SecUsersService {
     const now = new Date();
     const fechaRenovacionMembresia = new Date(now);
     fechaRenovacionMembresia.setFullYear(fechaRenovacionMembresia.getFullYear() + 1);
-    const fechaUltimaZ2 = now;
     
-    // Valores iniciales para zonas
+    // Valores iniciales
     const puntosIniciales = 10000;
+    const suscripcionInicial = 299.00;
     
     try {
-      // Crear usuario y zona inicial en una transacción
+      // Crear usuario en una transacción
       const user = await this.prisma.$transaction(async (tx) => {
         // Preparar datos del usuario
         const userData: Prisma.sec_usersCreateInput = {
@@ -139,7 +139,6 @@ export class SecUsersService {
           TipoMembresia: createSecUserDto.TipoMembresia,
           DisciplinaPrincipal: createSecUserDto.DisciplinaPrincipal,
           FechaRenovacionMembresia: fechaRenovacionMembresia,
-          FechaUltimaZ2: fechaUltimaZ2,
           fechaNacimiento: createSecUserDto.fechaNacimiento 
             ? new Date(createSecUserDto.fechaNacimiento) 
             : null,
@@ -156,18 +155,18 @@ export class SecUsersService {
           priv_admin: createSecUserDto.priv_admin,
           mfa: createSecUserDto.mfa,
           role: createSecUserDto.role,
-          // Inicializar campos de zonas
+          // Campos de zonas - no inicializar con puntos
           Z2TotalHistorico: createSecUserDto.Z2TotalHistorico
             ? BigInt(createSecUserDto.Z2TotalHistorico)
-            : BigInt(puntosIniciales),
-          Z2Recibidas30d: createSecUserDto.Z2Recibidas30d ?? puntosIniciales,
-          WalletPuntos: createSecUserDto.WalletPuntos ?? puntosIniciales,
-          WalletPuntosI: createSecUserDto.WalletPuntosI,
+            : null,
+          Z2Recibidas30d: createSecUserDto.Z2Recibidas30d ?? null,
+          WalletPuntos: createSecUserDto.WalletPuntos,
+          WalletPuntosI: createSecUserDto.WalletPuntosI ?? puntosIniciales,
           WalletSaldoMXN: createSecUserDto.WalletSaldoMXN,
           GananciasAcumuladasMXN: createSecUserDto.GananciasAcumuladasMXN,
           InvitacionesTotales: createSecUserDto.InvitacionesTotales,
           InvitacionesMensuales: createSecUserDto.InvitacionesMensuales,
-          SuscripcionMXN: createSecUserDto.SuscripcionMXN,
+          SuscripcionMXN: createSecUserDto.SuscripcionMXN ?? suscripcionInicial,
           PorcentajeCumplimiento: createSecUserDto.PorcentajeCumplimiento,
           NivelRunner: createSecUserDto.NivelRunner,
           CFDIEmitido: createSecUserDto.CFDIEmitido,
@@ -186,18 +185,6 @@ export class SecUsersService {
         // Crear usuario
         const newUser = await tx.sec_users.create({
           data: userData,
-        });
-
-        // Crear zona inicial (se refiere a sí mismo)
-        await tx.zonas.create({
-          data: {
-            RunnerUID: runnerUID,
-            RunnerUIDRef: runnerUID, // Se refiere a sí mismo en el registro inicial
-            puntos: puntosIniciales,
-            motivo: 'R', // Registro
-            origen: '3', // 3 = Registro
-            fecha: fechaUltimaZ2,
-          },
         });
 
         return newUser;
