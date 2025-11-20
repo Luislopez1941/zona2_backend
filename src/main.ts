@@ -6,6 +6,9 @@ import { BigIntSerializerInterceptor } from './common/interceptors/bigint-serial
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
+  // Agregar prefijo global 'api' a todas las rutas
+  app.setGlobalPrefix('api');
+  
   // Habilitar CORS para todos los orígenes
   app.enableCors({
     origin: true,
