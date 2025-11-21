@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { SmsService } from '../../common/services/sms.service';
 import { CreateSecUserDto } from './dto/create-sec_user.dto';
 import { UpdateSecUserDto } from './dto/update-sec_user.dto';
 import { createHash } from 'crypto';
@@ -7,7 +8,10 @@ import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class SecUsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly smsService: SmsService,
+  ) {}
 
   /**
    * Genera un código aleatorio con formato: prefijo + 3 números (65-90) + 3 letras (A-Z)
@@ -120,6 +124,36 @@ export class SecUsersService {
     const puntosIniciales = 10000;
     const suscripcionInicial = 299.00;
     
+    // Validar RunnerUIDRef si se proporciona
+    let referidor: {
+      login: string;
+      RunnerUID: string;
+      InvitacionesTotales: number | null;
+      InvitacionesMensuales: number | null;
+    } | null = null;
+    
+    if (createSecUserDto.RunnerUIDRef) {
+      const referidorFound = await this.prisma.sec_users.findFirst({
+        where: { RunnerUID: createSecUserDto.RunnerUIDRef },
+        select: {
+          login: true,
+          RunnerUID: true,
+          InvitacionesTotales: true,
+          InvitacionesMensuales: true,
+        },
+      });
+
+      if (!referidorFound) {
+        return {
+          message: `El RunnerUID de referencia '${createSecUserDto.RunnerUIDRef}' no existe`,
+          status: 'error',
+          user: undefined,
+        };
+      }
+      
+      referidor = referidorFound;
+    }
+    
     try {
       // Crear usuario en una transacción
       const user = await this.prisma.$transaction(async (tx) => {
@@ -149,7 +183,7 @@ export class SecUsersService {
           EmergenciaCelular: createSecUserDto.EmergenciaCelular,
           EmergenciaParentesco: createSecUserDto.EmergenciaParentesco,
           equipoID: createSecUserDto.equipoID,
-          RunnerUIDRef: createSecUserDto.RunnerUIDRef,
+          RunnerUIDRef: createSecUserDto.RunnerUIDRef || null,
           active: createSecUserDto.active,
           activation_code: createSecUserDto.activation_code,
           priv_admin: createSecUserDto.priv_admin,
@@ -164,8 +198,9 @@ export class SecUsersService {
           WalletPuntosI: createSecUserDto.WalletPuntosI ?? puntosIniciales,
           WalletSaldoMXN: createSecUserDto.WalletSaldoMXN,
           GananciasAcumuladasMXN: createSecUserDto.GananciasAcumuladasMXN,
-          InvitacionesTotales: createSecUserDto.InvitacionesTotales,
-          InvitacionesMensuales: createSecUserDto.InvitacionesMensuales,
+          // No permitir que el frontend envíe estos valores, se calculan automáticamente
+          InvitacionesTotales: null,
+          InvitacionesMensuales: null,
           SuscripcionMXN: createSecUserDto.SuscripcionMXN ?? suscripcionInicial,
           PorcentajeCumplimiento: createSecUserDto.PorcentajeCumplimiento,
           NivelRunner: createSecUserDto.NivelRunner,
@@ -186,6 +221,20 @@ export class SecUsersService {
         const newUser = await tx.sec_users.create({
           data: userData,
         });
+
+        // Si hay referidor, actualizar sus contadores de invitaciones
+        if (referidor) {
+          const invitacionesTotales = (referidor.InvitacionesTotales || 0) + 1;
+          const invitacionesMensuales = (referidor.InvitacionesMensuales || 0) + 1;
+
+          await tx.sec_users.update({
+            where: { login: referidor.login },
+            data: {
+              InvitacionesTotales: invitacionesTotales,
+              InvitacionesMensuales: invitacionesMensuales,
+            },
+          });
+        }
 
         return newUser;
       });
@@ -402,5 +451,180 @@ export class SecUsersService {
     return this.prisma.sec_users.delete({
       where: { login: login },
     });
+  }
+
+  /**
+   * Obtiene la información del usuario autenticado
+   */
+  async me(login: string) {
+    const user = await this.findOne(login);
+    
+    // Retornar usuario sin la contraseña
+    const { pswd, ...userWithoutPassword } = user;
+    
+    return {
+      message: 'Usuario obtenido exitosamente',
+      status: 'success',
+      user: userWithoutPassword,
+    };
+  }
+
+  /**
+   * Genera un código de recuperación de contraseña
+   */
+  private generateRecoveryCode(): string {
+    // Genera un código de 6 dígitos
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  /**
+   * Verifica si el número existe y envía código de recuperación por SMS
+   * Retorna true si el número existe y el código fue enviado
+   * Busca por login o phone (ya que login puede ser el número telefónico)
+   */
+  async forgetPassword(identifier: string) {
+    // Buscar usuario por login o número telefónico
+    const user = await this.prisma.sec_users.findFirst({
+      where: {
+        OR: [
+          { login: identifier },
+          { phone: identifier },
+        ],
+      },
+    });
+
+    if (!user) {
+      return {
+        message: 'Usuario no encontrado',
+        status: 'error',
+        exists: false,
+      };
+    }
+
+    // Generar código de recuperación
+    const recoveryCode = this.generateRecoveryCode();
+
+    // Guardar el código en activation_code
+    await this.prisma.sec_users.update({
+      where: { login: user.login },
+      data: {
+        activation_code: recoveryCode,
+      },
+    });
+
+    // Enviar código por SMS
+    console.log('=== DEBUG forgetPassword ===');
+    console.log('Usuario encontrado:', user.login);
+    console.log('Código generado:', recoveryCode);
+    console.log('Enviando SMS a:', user.phone);
+    
+    const smsSent = await this.smsService.sendRecoveryCode(user.phone, recoveryCode);
+
+    if (!smsSent) {
+      console.error('❌ No se pudo enviar el SMS');
+      return {
+        message: 'Error al enviar código por SMS',
+        status: 'error',
+        exists: true,
+      };
+    }
+
+    console.log('✅ SMS enviado correctamente');
+    console.log('===========================');
+
+    return {
+      message: 'Código de recuperación enviado a tu teléfono',
+      status: 'success',
+      exists: true,
+    };
+  }
+
+  /**
+   * Verifica el código de recuperación ingresado por el usuario
+   */
+  async verifyRecoveryCode(phone: string, code: string) {
+    // Buscar usuario por número telefónico
+    const user = await this.prisma.sec_users.findFirst({
+      where: {
+        phone: phone,
+      },
+    });
+
+    if (!user) {
+      return {
+        message: 'Usuario no encontrado',
+        status: 'error',
+        verified: false,
+      };
+    }
+
+    // Verificar si el código coincide
+    if (!user.activation_code || user.activation_code !== code) {
+      return {
+        message: 'Código de recuperación incorrecto',
+        status: 'error',
+        verified: false,
+      };
+    }
+
+    // Código verificado correctamente
+    return {
+      message: 'Código verificado correctamente',
+      status: 'success',
+      verified: true,
+      login: user.login, // Retornar el login para el siguiente paso (cambiar contraseña)
+    };
+  }
+
+  /**
+   * Cambia la contraseña del usuario después de verificar el código de recuperación
+   * Busca por login o phone (ya que login puede ser el número telefónico)
+   */
+  async changePassword(identifier: string, code: string, newPassword: string) {
+    // Buscar usuario por login o número telefónico
+    const user = await this.prisma.sec_users.findFirst({
+      where: {
+        OR: [
+          { login: identifier },
+          { phone: identifier },
+        ],
+      },
+    });
+
+    if (!user) {
+      return {
+        message: 'Usuario no encontrado',
+        status: 'error',
+        changed: false,
+      };
+    }
+
+    // Verificar si el código coincide
+    if (!user.activation_code || user.activation_code !== code) {
+      return {
+        message: 'Código de recuperación incorrecto',
+        status: 'error',
+        changed: false,
+      };
+    }
+
+    // Hashear la nueva contraseña con SHA1
+    const hashedPassword = createHash('sha1').update(newPassword).digest('hex');
+
+    // Actualizar la contraseña y limpiar el código de activación
+    await this.prisma.sec_users.update({
+      where: { login: user.login },
+      data: {
+        pswd: hashedPassword,
+        activation_code: null, // Limpiar el código después de usarlo
+        pswd_last_updated: new Date(),
+      },
+    });
+
+    return {
+      message: 'Contraseña cambiada exitosamente',
+      status: 'success',
+      changed: true,
+    };
   }
 }
