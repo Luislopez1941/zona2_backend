@@ -62,6 +62,38 @@ export class SecUsersService {
     return createHash('sha1').update(password).digest('hex');
   }
 
+  /**
+   * Pre-registro: crea un usuario y genera automáticamente RunnerUIDRef si no se proporciona
+   */
+  async preRegister(createSecUserDto: CreateSecUserDto) {
+    // Si no se proporciona RunnerUIDRef, buscar un referidor por defecto
+    if (!createSecUserDto.RunnerUIDRef) {
+      // Buscar el primer usuario activo más antiguo como referidor por defecto
+      // Usuario activo: null, no '0', no 'N'
+      const defaultReferidor = await this.prisma.sec_users.findFirst({
+        where: {
+          OR: [
+            { active: null }, // null se considera activo
+            { active: { notIn: ['0', 'N'] } }, // Cualquier otro valor que no sea '0' o 'N'
+          ],
+        },
+        orderBy: {
+          FechaRegistro: 'asc', // El más antiguo
+        },
+        select: {
+          RunnerUID: true,
+        },
+      });
+
+      if (defaultReferidor) {
+        createSecUserDto.RunnerUIDRef = defaultReferidor.RunnerUID;
+      }
+    }
+
+    // Llamar al método create normal
+    return this.create(createSecUserDto);
+  }
+
   async create(createSecUserDto: CreateSecUserDto) {
     // Verificar si el email ya existe
     const existingUserByEmail = await this.prisma.sec_users.findFirst({

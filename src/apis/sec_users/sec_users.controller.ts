@@ -23,7 +23,7 @@ export class SecUsersController {
 
   @Post('pre-register')
   preRegister(@Body() createSecUserDto: CreateSecUserDto) {
-    return this.secUsersService.create(createSecUserDto);
+    return this.secUsersService.preRegister(createSecUserDto);
   }
 
   @Post('create')
