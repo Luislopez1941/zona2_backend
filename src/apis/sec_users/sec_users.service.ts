@@ -4,7 +4,7 @@ import { SmsService } from '../../common/services/sms.service';
 import { CreateSecUserDto } from './dto/create-sec_user.dto';
 import { UpdateSecUserDto } from './dto/update-sec_user.dto';
 import { createHash } from 'crypto';
-import { Prisma } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 
 @Injectable()
 export class SecUsersService {
@@ -158,7 +158,7 @@ export class SecUsersService {
       // Crear usuario en una transacción
       const user = await this.prisma.$transaction(async (tx) => {
         // Preparar datos del usuario
-        const userData: Prisma.sec_usersCreateInput = {
+        const userData = {
           RunnerUID: runnerUID,
           AliasRunner: aliasRunner,
           name: createSecUserDto.name,
@@ -246,13 +246,11 @@ export class SecUsersService {
       };
     } catch (error) {
       // Manejar errores de Prisma (como violación de restricción única)
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2002') {
-          const field = error.meta?.target as string[];
-          throw new ConflictException(
-            `Ya existe un usuario con ${field?.join(', ') || 'estos datos'}`,
-          );
-        }
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
+        const field = (error as any).meta?.target as string[] | undefined;
+        throw new ConflictException(
+          `Ya existe un usuario con ${field?.join(', ') || 'estos datos'}`,
+        );
       }
       throw error;
     }
@@ -306,7 +304,7 @@ export class SecUsersService {
     } = updateSecUserDto;
 
     // Construir el objeto de actualización excluyendo campos problemáticos
-    const updateData: Prisma.sec_usersUpdateInput = {
+    const updateData: any = {
       ...restFields,
     };
 
