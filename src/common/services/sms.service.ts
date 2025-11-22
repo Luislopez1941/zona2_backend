@@ -1,37 +1,115 @@
 import { Injectable } from '@nestjs/common';
-import * as twilio from 'twilio';
 
 @Injectable()
 export class SmsService {
-  private client: twilio.Twilio | null = null;
+  private apiKey: string | null = null;
+  private apiUrl = 'https://platform.clickatell.com/messages';
+  private acceptedCodes = [200, 201, 202];
 
   constructor() {
-    // Inicializar cliente de Twilio con credenciales del entorno
-    const accountSid = process.env.TWILIO_ACCOUNT_SID;
-    const authToken = process.env.TWILIO_AUTH_TOKEN;
-    const fromNumber = process.env.TWILIO_PHONE_NUMBER;
+    // Inicializar Clickatell con la API key del entorno
+    // Puede usar CLICKATELL_AUTHORIZATION_TOKEN o CLICKATELL_API_KEY
+    this.apiKey = process.env.CLICKATELL_AUTHORIZATION_TOKEN || process.env.CLICKATELL_API_KEY || null;
 
-    // Validar que las credenciales sean válidas antes de inicializar Twilio
-    // accountSid debe empezar con "AC" y no ser un placeholder
-    if (
-      accountSid &&
-      authToken &&
-      accountSid.startsWith('AC') &&
-      accountSid !== 'tu_account_sid_aqui' &&
-      authToken !== 'tu_auth_token_aqui' &&
-      fromNumber &&
-      fromNumber !== '+1234567890'
-    ) {
-      try {
-        this.client = twilio(accountSid, authToken);
-        console.log('✅ Twilio inicializado correctamente');
-      } catch (error) {
-        console.warn('⚠️  Error al inicializar Twilio:', error.message);
-        this.client = null;
-      }
+    if (this.apiKey && this.apiKey !== 'tu_api_key_aqui') {
+      console.log('✅ Clickatell inicializado correctamente');
+      console.log('URL de API:', this.apiUrl);
     } else {
-      console.log('⚠️  Twilio no configurado. Usando modo desarrollo (códigos en consola).');
-      this.client = null;
+      console.log('⚠️  Clickatell no configurado. Usando modo desarrollo (códigos en consola).');
+    }
+  }
+
+  /**
+   * Formatea el número de teléfono para Clickatell
+   * Clickatell requiere números en formato internacional sin el signo +
+   */
+  private formatPhone(phone: string): string {
+    let formattedPhone: string;
+    
+    // Si ya tiene +, removerlo
+    if (phone.startsWith('+')) {
+      formattedPhone = phone.substring(1);
+    } else if (phone.length === 10) {
+      // Número mexicano de 10 dígitos, agregar código de país 52
+      formattedPhone = `52${phone}`;
+    } else {
+      // Cualquier otro caso, usar tal cual
+      formattedPhone = phone;
+    }
+    
+    return formattedPhone;
+  }
+
+  /**
+   * Envía un SMS usando la API de Clickatell (Platform API)
+   */
+  private async sendSmsClickatell(phone: string, message: string): Promise<boolean> {
+    try {
+      // Si no hay API key configurada, solo loguear (para desarrollo)
+      if (!this.apiKey || this.apiKey === 'tu_api_key_aqui') {
+        console.log(`[SMS - MODO DESARROLLO] Mensaje para ${phone}: ${message}`);
+        return true; // Simular envío exitoso en desarrollo
+      }
+
+      const formattedPhone = this.formatPhone(phone);
+      
+      // Limpiar la API key (remover espacios y comillas si las hay)
+      const cleanApiKey = this.apiKey.trim().replace(/^["']|["']$/g, '');
+      
+      console.log('=== DEBUG Clickatell Request ===');
+      console.log('URL:', this.apiUrl);
+      console.log('API Key length:', cleanApiKey.length);
+      console.log('Teléfono formateado:', formattedPhone);
+      console.log('Mensaje:', message);
+      
+      const requestBody = {
+        content: message,
+        to: [formattedPhone],
+      };
+      
+      console.log('Request Body:', JSON.stringify(requestBody));
+      
+      const response = await fetch(this.apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': cleanApiKey, // Token directo, sin "Bearer"
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      const httpCode = response.status;
+      console.log('HTTP Status Code:', httpCode);
+
+      // Verificar si el código HTTP está en los aceptados (200, 201, 202)
+      if (!this.acceptedCodes.includes(httpCode)) {
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          errorData = await response.text();
+        }
+        
+        console.error('❌ Error al enviar SMS con Clickatell:');
+        console.error('Status:', httpCode);
+        console.error('Status Text:', response.statusText);
+        console.error('Error Data:', errorData);
+        return false;
+      }
+
+      const result = await response.json();
+      console.log('✅ SMS enviado exitosamente con Clickatell');
+      console.log('Response:', result);
+      return true;
+    } catch (error: any) {
+      console.error('❌ Error al enviar SMS con Clickatell:');
+      console.error('Tipo de error:', error?.constructor?.name || 'Unknown');
+      console.error('Mensaje:', error?.message || 'Sin mensaje');
+      if (error?.stack) {
+        console.error('Stack:', error.stack);
+      }
+      return false;
     }
   }
 
@@ -43,75 +121,40 @@ export class SmsService {
       console.log('=== DEBUG SMS ===');
       console.log('Teléfono destino:', phone);
       console.log('Código a enviar:', code);
-      console.log('TWILIO_ACCOUNT_SID:', process.env.TWILIO_ACCOUNT_SID ? 'Configurado' : 'NO CONFIGURADO');
-      console.log('TWILIO_AUTH_TOKEN:', process.env.TWILIO_AUTH_TOKEN ? 'Configurado' : 'NO CONFIGURADO');
-      console.log('TWILIO_PHONE_NUMBER:', process.env.TWILIO_PHONE_NUMBER || 'NO CONFIGURADO');
-      console.log('Cliente Twilio inicializado:', this.client ? 'Sí' : 'No');
+      console.log('CLICKATELL_AUTHORIZATION_TOKEN:', process.env.CLICKATELL_AUTHORIZATION_TOKEN ? 'Configurado' : 'NO CONFIGURADO');
+      console.log('CLICKATELL_API_KEY:', process.env.CLICKATELL_API_KEY ? 'Configurado' : 'NO CONFIGURADO');
 
-      // Si no hay credenciales de Twilio configuradas, solo loguear (para desarrollo)
-      if (!this.client || !process.env.TWILIO_PHONE_NUMBER) {
+      // Si no hay credenciales de Clickatell configuradas, solo loguear (para desarrollo)
+      if (!this.apiKey || this.apiKey === 'tu_api_key_aqui') {
         console.log(`[SMS - MODO DESARROLLO] Código de recuperación para ${phone}: ${code}`);
-        console.log('⚠️  Twilio no configurado. El código se muestra en consola para desarrollo.');
+        console.log('⚠️  Clickatell no configurado. El código se muestra en consola para desarrollo.');
         return true; // Simular envío exitoso en desarrollo
       }
 
-      // Formatear número de teléfono
-      // Si no tiene +, asumir que es México (+52) y agregar el código de país
-      let formattedPhone: string;
-      if (phone.startsWith('+')) {
-        formattedPhone = phone;
-      } else if (phone.length === 10 && phone.startsWith('9')) {
-        // Número mexicano de 10 dígitos que empieza con 9, agregar +52
-        formattedPhone = `+52${phone}`;
-      } else if (phone.length === 10) {
-        // Número mexicano de 10 dígitos, agregar +52
-        formattedPhone = `+52${phone}`;
-      } else {
-        // Cualquier otro caso, solo agregar +
-        formattedPhone = `+${phone}`;
-      }
+      const formattedPhone = this.formatPhone(phone);
       console.log('Teléfono formateado:', formattedPhone);
 
       const messageBody = `Tu código de recuperación de contraseña Zona 2 es: ${code}. Válido por 10 minutos.`;
       console.log('Mensaje a enviar:', messageBody);
 
-      const message = await this.client.messages.create({
-        body: messageBody,
-        from: process.env.TWILIO_PHONE_NUMBER,
-        to: formattedPhone,
-      });
+      const success = await this.sendSmsClickatell(formattedPhone, messageBody);
 
-      console.log('✅ SMS enviado exitosamente');
-      console.log('Twilio SID:', message.sid);
-      console.log('Estado:', message.status);
-      console.log('==================');
-      return true;
+      if (success) {
+        console.log('✅ SMS enviado correctamente');
+        console.log('==================');
+      } else {
+        console.log('❌ No se pudo enviar el SMS');
+        console.log('==================');
+      }
+
+      return success;
     } catch (error: any) {
       console.error('❌ Error al enviar SMS:');
       console.error('Tipo de error:', error?.constructor?.name || 'Unknown');
       console.error('Mensaje:', error?.message || 'Sin mensaje');
-      if (error?.code) {
-        console.error('Código de error Twilio:', error.code);
-      }
-      if (error?.moreInfo) {
-        console.error('Más información:', error.moreInfo);
-      }
-      if (error?.status) {
-        console.error('Status HTTP:', error.status);
-      }
       if (error?.stack) {
         console.error('Stack:', error.stack);
       }
-      
-      // Errores comunes de Twilio
-      if (error?.code === 21211) {
-        console.error('⚠️  El número de teléfono no es válido');
-      } else if (error?.code === 21608) {
-        console.error('⚠️  El número no está verificado en tu cuenta de Twilio (cuenta de prueba)');
-      } else if (error?.code === 21614) {
-        console.error('⚠️  El número de teléfono no puede recibir SMS');
-      }
-      
       console.log('==================');
       return false;
     }
@@ -125,75 +168,40 @@ export class SmsService {
       console.log('=== DEBUG SMS ===');
       console.log('Teléfono destino:', phone);
       console.log('Código a enviar:', code);
-      console.log('TWILIO_ACCOUNT_SID:', process.env.TWILIO_ACCOUNT_SID ? 'Configurado' : 'NO CONFIGURADO');
-      console.log('TWILIO_AUTH_TOKEN:', process.env.TWILIO_AUTH_TOKEN ? 'Configurado' : 'NO CONFIGURADO');
-      console.log('TWILIO_PHONE_NUMBER:', process.env.TWILIO_PHONE_NUMBER || 'NO CONFIGURADO');
-      console.log('Cliente Twilio inicializado:', this.client ? 'Sí' : 'No');
+      console.log('CLICKATELL_AUTHORIZATION_TOKEN:', process.env.CLICKATELL_AUTHORIZATION_TOKEN ? 'Configurado' : 'NO CONFIGURADO');
+      console.log('CLICKATELL_API_KEY:', process.env.CLICKATELL_API_KEY ? 'Configurado' : 'NO CONFIGURADO');
 
-      // Si no hay credenciales de Twilio configuradas, solo loguear (para desarrollo)
-      if (!this.client || !process.env.TWILIO_PHONE_NUMBER) {
+      // Si no hay credenciales de Clickatell configuradas, solo loguear (para desarrollo)
+      if (!this.apiKey || this.apiKey === 'tu_api_key_aqui') {
         console.log(`[SMS - MODO DESARROLLO] Código de acceso para ${phone}: ${code}`);
-        console.log('⚠️  Twilio no configurado. El código se muestra en consola para desarrollo.');
+        console.log('⚠️  Clickatell no configurado. El código se muestra en consola para desarrollo.');
         return true; // Simular envío exitoso en desarrollo
       }
 
-      // Formatear número de teléfono
-      // Si no tiene +, asumir que es México (+52) y agregar el código de país
-      let formattedPhone: string;
-      if (phone.startsWith('+')) {
-        formattedPhone = phone;
-      } else if (phone.length === 10 && phone.startsWith('9')) {
-        // Número mexicano de 10 dígitos que empieza con 9, agregar +52
-        formattedPhone = `+52${phone}`;
-      } else if (phone.length === 10) {
-        // Número mexicano de 10 dígitos, agregar +52
-        formattedPhone = `+52${phone}`;
-      } else {
-        // Cualquier otro caso, solo agregar +
-        formattedPhone = `+${phone}`;
-      }
+      const formattedPhone = this.formatPhone(phone);
       console.log('Teléfono formateado:', formattedPhone);
 
       const messageBody = `Tu código de acceso Zona 2 es: ${code}. Válido por 10 minutos.`;
       console.log('Mensaje a enviar:', messageBody);
 
-      const message = await this.client.messages.create({
-        body: messageBody,
-        from: process.env.TWILIO_PHONE_NUMBER,
-        to: formattedPhone,
-      });
+      const success = await this.sendSmsClickatell(formattedPhone, messageBody);
 
-      console.log('✅ SMS enviado exitosamente');
-      console.log('Twilio SID:', message.sid);
-      console.log('Estado:', message.status);
-      console.log('==================');
-      return true;
+      if (success) {
+        console.log('✅ SMS enviado correctamente');
+        console.log('==================');
+      } else {
+        console.log('❌ No se pudo enviar el SMS');
+        console.log('==================');
+      }
+
+      return success;
     } catch (error: any) {
       console.error('❌ Error al enviar SMS:');
       console.error('Tipo de error:', error?.constructor?.name || 'Unknown');
       console.error('Mensaje:', error?.message || 'Sin mensaje');
-      if (error?.code) {
-        console.error('Código de error Twilio:', error.code);
-      }
-      if (error?.moreInfo) {
-        console.error('Más información:', error.moreInfo);
-      }
-      if (error?.status) {
-        console.error('Status HTTP:', error.status);
-      }
       if (error?.stack) {
         console.error('Stack:', error.stack);
       }
-      
-      // Errores comunes de Twilio
-      if (error?.code === 21211) {
-        console.error('⚠️  El número de teléfono no es válido');
-      } else if (error?.code === 21608) {
-        console.error('⚠️  El número no está verificado en tu cuenta de Twilio (cuenta de prueba)');
-      } else if (error?.code === 21614) {
-        console.error('⚠️  El número de teléfono no puede recibir SMS');
-      }
-      
       console.log('==================');
       return false;
     }
@@ -204,23 +212,16 @@ export class SmsService {
    */
   async sendSms(phone: string, message: string): Promise<boolean> {
     try {
-      if (!this.client || !process.env.TWILIO_PHONE_NUMBER) {
+      if (!this.apiKey || this.apiKey === 'tu_api_key_aqui') {
         console.log(`[SMS] Mensaje para ${phone}: ${message}`);
         return true;
       }
 
-      const result = await this.client.messages.create({
-        body: message,
-        from: process.env.TWILIO_PHONE_NUMBER,
-        to: phone,
-      });
-
-      console.log(`SMS enviado exitosamente. SID: ${result.sid}`);
-      return true;
+      const formattedPhone = this.formatPhone(phone);
+      return await this.sendSmsClickatell(formattedPhone, message);
     } catch (error) {
       console.error('Error al enviar SMS:', error);
       return false;
     }
   }
 }
-

@@ -3,6 +3,10 @@ import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { BigIntSerializerInterceptor } from './common/interceptors/bigint-serializer.interceptor';
+import { config } from 'dotenv';
+
+// Cargar variables de entorno desde .env
+config();
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

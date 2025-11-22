@@ -27,20 +27,25 @@
 
 ## Configuración Inicial
 
-### 1. Configurar Base de Datos
+### 1. Configurar Variables de Entorno
 
 Crea un archivo `.env` en la raíz del proyecto:
 
 ```env
 DATABASE_URL="mysql://USUARIO:CONTRASEÑA@HOST:PUERTO/NOMBRE_BASE_DATOS"
+CLICKATELL_AUTHORIZATION_TOKEN="tu_token_de_autorizacion_clickatell"
 ```
 
 **Ejemplo:**
 ```env
 DATABASE_URL="mysql://root:zona123@localhost:3306/zona_2"
+CLICKATELL_AUTHORIZATION_TOKEN="tu_token_de_autorizacion_clickatell"
 ```
 
-**Formato:** `mysql://USUARIO:CONTRASEÑA@HOST:PUERTO/NOMBRE_BASE_DATOS`
+**Formato:**
+- `DATABASE_URL`: `mysql://USUARIO:CONTRASEÑA@HOST:PUERTO/NOMBRE_BASE_DATOS`
+- `CLICKATELL_AUTHORIZATION_TOKEN`: Token de autorización de Clickatell (se envía directamente sin "Bearer")
+- `CLICKATELL_API_KEY`: Alternativa, también aceptada (se usa si no está CLICKATELL_AUTHORIZATION_TOKEN)
 
 ### 2. Instalar Dependencias
 

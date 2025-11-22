@@ -45,6 +45,24 @@ export class SecUsersService {
   }
 
   /**
+   * Genera RunnerUIDRef con formato: RR + 3 números (0-9) + 3 letras (A-Z)
+   * Ejemplo: RR707068TDN
+   */
+  private generateRunnerUIDRef(): string {
+    // Genera 3 números aleatorios entre 0 y 9
+    const num1 = Math.floor(Math.random() * 10);
+    const num2 = Math.floor(Math.random() * 10);
+    const num3 = Math.floor(Math.random() * 10);
+    
+    // Genera 3 letras aleatorias (A-Z)
+    const char1 = String.fromCharCode(Math.floor(Math.random() * 26) + 65);
+    const char2 = String.fromCharCode(Math.floor(Math.random() * 26) + 65);
+    const char3 = String.fromCharCode(Math.floor(Math.random() * 26) + 65);
+    
+    return `RR${num1}${num2}${num3}${char1}${char2}${char3}`;
+  }
+
+  /**
    * Genera una contraseña y la hashea con SHA1
    */
   private generateDefaultPassword(): string {
@@ -63,32 +81,23 @@ export class SecUsersService {
   }
 
   /**
-   * Pre-registro: crea un usuario y genera automáticamente RunnerUIDRef si no se proporciona
+   * Pre-registro: crea un usuario y genera automáticamente RunnerUIDRef
+   * RunnerUIDRef siempre se genera automáticamente, se ignora cualquier valor enviado
    */
   async preRegister(createSecUserDto: CreateSecUserDto) {
-    // Si no se proporciona RunnerUIDRef, buscar un referidor por defecto
-    if (!createSecUserDto.RunnerUIDRef) {
-      // Buscar el primer usuario activo más antiguo como referidor por defecto
-      // Usuario activo: null, no '0', no 'N'
-      const defaultReferidor = await this.prisma.sec_users.findFirst({
-        where: {
-          OR: [
-            { active: null }, // null se considera activo
-            { active: { notIn: ['0', 'N'] } }, // Cualquier otro valor que no sea '0' o 'N'
-          ],
-        },
-        orderBy: {
-          FechaRegistro: 'asc', // El más antiguo
-        },
-        select: {
-          RunnerUID: true,
-        },
-      });
+    // Siempre generar RunnerUIDRef automáticamente (ignorar cualquier valor enviado)
+    const generatedRunnerUIDRef = this.generateRunnerUIDRef();
+    createSecUserDto.RunnerUIDRef = generatedRunnerUIDRef;
 
-      if (defaultReferidor) {
-        createSecUserDto.RunnerUIDRef = defaultReferidor.RunnerUID;
-      }
+    // Establecer TipoMembresia como "E" por defecto si no se proporciona
+    if (!createSecUserDto.TipoMembresia) {
+      createSecUserDto.TipoMembresia = 'E';
     }
+
+    console.log('=== DEBUG preRegister ===');
+    console.log('RunnerUIDRef generado:', generatedRunnerUIDRef);
+    console.log('TipoMembresia:', createSecUserDto.TipoMembresia);
+    console.log('========================');
 
     // Llamar al método create normal
     return this.create(createSecUserDto);
@@ -154,9 +163,10 @@ export class SecUsersService {
     
     // Valores iniciales
     const puntosIniciales = 10000;
-    const suscripcionInicial = 299.00;
+    const suscripcionInicial = 399.00;
     
-    // Validar RunnerUIDRef si se proporciona
+    // RunnerUIDRef siempre es un código generado automáticamente (formato "RR...")
+    // No se valida como usuario real, es solo un código único de referencia
     let referidor: {
       login: string;
       RunnerUID: string;
@@ -164,7 +174,9 @@ export class SecUsersService {
       InvitacionesMensuales: number | null;
     } | null = null;
     
-    if (createSecUserDto.RunnerUIDRef) {
+    // Si RunnerUIDRef no empieza con "RR", podría ser un RunnerUID real (para compatibilidad con endpoint create)
+    if (createSecUserDto.RunnerUIDRef && !createSecUserDto.RunnerUIDRef.startsWith('RR')) {
+      // Es un RunnerUID real, validar que exista
       const referidorFound = await this.prisma.sec_users.findFirst({
         where: { RunnerUID: createSecUserDto.RunnerUIDRef },
         select: {
@@ -185,10 +197,25 @@ export class SecUsersService {
       
       referidor = referidorFound;
     }
+    // Si empieza con "RR", es un código generado, no buscar referidor real
     
     try {
       // Crear usuario en una transacción
       const user = await this.prisma.$transaction(async (tx) => {
+        console.log('=== DEBUG create ===');
+        console.log('RunnerUIDRef recibido:', createSecUserDto.RunnerUIDRef);
+        console.log('TipoMembresia recibido:', createSecUserDto.TipoMembresia);
+        console.log('====================');
+        
+        // Asegurar que RunnerUIDRef y TipoMembresia tengan valores
+        const finalRunnerUIDRef = createSecUserDto.RunnerUIDRef || null;
+        const finalTipoMembresia = createSecUserDto.TipoMembresia || 'E';
+        
+        console.log('=== DEBUG valores finales ===');
+        console.log('finalRunnerUIDRef:', finalRunnerUIDRef);
+        console.log('finalTipoMembresia:', finalTipoMembresia);
+        console.log('=============================');
+        
         // Preparar datos del usuario
         const userData = {
           RunnerUID: runnerUID,
@@ -202,7 +229,7 @@ export class SecUsersService {
           Ciudad: createSecUserDto.Ciudad,
           Estado: createSecUserDto.Estado,
           Pais: createSecUserDto.Pais,
-          TipoMembresia: createSecUserDto.TipoMembresia,
+          TipoMembresia: finalTipoMembresia,
           DisciplinaPrincipal: createSecUserDto.DisciplinaPrincipal,
           FechaRenovacionMembresia: fechaRenovacionMembresia,
           fechaNacimiento: createSecUserDto.fechaNacimiento 
@@ -215,7 +242,7 @@ export class SecUsersService {
           EmergenciaCelular: createSecUserDto.EmergenciaCelular,
           EmergenciaParentesco: createSecUserDto.EmergenciaParentesco,
           equipoID: createSecUserDto.equipoID,
-          RunnerUIDRef: createSecUserDto.RunnerUIDRef || null,
+          RunnerUIDRef: finalRunnerUIDRef,
           active: createSecUserDto.active,
           activation_code: createSecUserDto.activation_code,
           priv_admin: createSecUserDto.priv_admin,
