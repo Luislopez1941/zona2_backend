@@ -7,6 +7,7 @@ import { DarZonaDto } from './dto/dar-zona.dto';
 import { ForgetPasswordDto } from './dto/forget-password.dto';
 import { VerifyRecoveryCodeDto } from './dto/verify-recovery-code.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { CreateOrganizadorDto } from './dto/create-organizador.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 // Extender el tipo Request para incluir el usuario del JWT
@@ -24,6 +25,11 @@ export class SecUsersController {
   @Post('pre-register')
   preRegister(@Body() createSecUserDto: CreateSecUserDto) {
     return this.secUsersService.preRegister(createSecUserDto);
+  }
+
+  @Post('establishments-register')
+  establishmentsRegister(@Body() createOrganizadorDto: CreateOrganizadorDto) {
+    return this.secUsersService.createOrganizador(createOrganizadorDto);
   }
 
   @Post('create')

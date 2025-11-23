@@ -3,7 +3,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { SmsService } from '../../common/services/sms.service';
 import { CreateSecUserDto } from './dto/create-sec_user.dto';
 import { UpdateSecUserDto } from './dto/update-sec_user.dto';
-import { createHash } from 'crypto';
+import { CreateOrganizadorDto } from './dto/create-organizador.dto';
+import { createHash, randomUUID } from 'crypto';
 import { PrismaClient, Prisma } from '@prisma/client';
 
 @Injectable()
@@ -683,5 +684,166 @@ export class SecUsersService {
       status: 'success',
       changed: true,
     };
+  }
+
+  /**
+   * Crea un registro completo de organizador:
+   * 1. Crea usuario en sec_users
+   * 2. Crea registro en zonas (1000 puntos)
+   * 3. Crea suscripción
+   * 4. Crea registro en organizadores
+   */
+  async createOrganizador(createOrganizadorDto: CreateOrganizadorDto) {
+    // Verificar si el email ya existe
+    const existingUserByEmail = await this.prisma.sec_users.findFirst({
+      where: { email: createOrganizadorDto.correoElectronico },
+    });
+
+    if (existingUserByEmail) {
+      return {
+        message: 'Correo existente',
+        status: 'warning',
+        user: undefined,
+      };
+    }
+
+    // Verificar si el teléfono ya existe
+    const existingUserByPhone = await this.prisma.sec_users.findFirst({
+      where: { phone: createOrganizadorDto.celular },
+    });
+
+    if (existingUserByPhone) {
+      return {
+        message: 'Numero existente',
+        status: 'warning',
+        user: undefined,
+      };
+    }
+
+    // Verificar si el login (phone) ya existe
+    const existingUserByLogin = await this.prisma.sec_users.findUnique({
+      where: { login: createOrganizadorDto.celular },
+    });
+
+    if (existingUserByLogin) {
+      return {
+        message: `El usuario con login '${createOrganizadorDto.celular}' ya existe`,
+        status: 'warning',
+        user: undefined,
+      };
+    }
+
+    // Generar RunnerUID con formato Z2R...
+    const runnerUID = this.generateRunnerUID();
+    
+    // Generar AliasRunner con formato R...
+    const aliasRunner = this.generateAliasRunner();
+    
+    // Generar contraseña por defecto (hasheada con SHA1)
+    const password = this.generateDefaultPassword();
+    
+    // Calcular fechas
+    const now = new Date();
+    const fechaRenovacionMembresia = new Date(now);
+    fechaRenovacionMembresia.setFullYear(fechaRenovacionMembresia.getFullYear() + 1);
+    
+    // Valores para organizador
+    const puntosIniciales = 1000;
+    const suscripcionInicial = 399.00;
+    
+    try {
+      // Crear todos los registros en una transacción
+      const result = await this.prisma.$transaction(async (tx) => {
+        // Usar nombreCompleto si viene, sino usar nombreComercial como fallback
+        const nombreCompleto = createOrganizadorDto.nombreCompleto || createOrganizadorDto.nombreComercial;
+        
+        // 1. Crear usuario en sec_users
+        const newUser = await tx.sec_users.create({
+          data: {
+            RunnerUID: runnerUID,
+            AliasRunner: aliasRunner,
+            name: nombreCompleto,
+            login: createOrganizadorDto.celular, // login = celular
+            phone: createOrganizadorDto.celular,
+            email: createOrganizadorDto.correoElectronico,
+            pswd: password,
+            TipoMembresia: 'O', // Organizador
+            active: 'Y',
+            WalletPuntosI: puntosIniciales,
+            WalletPuntos: puntosIniciales,
+            SuscripcionMXN: suscripcionInicial,
+            FechaRenovacionMembresia: fechaRenovacionMembresia,
+            Z2TotalHistorico: BigInt(puntosIniciales),
+            Z2Recibidas30d: puntosIniciales,
+            Ciudad: 'Mérida',
+            Estado: 'Yucatán',
+            Pais: 'México',
+          },
+        });
+
+        // 2. Crear registro en zonas (1000 puntos, motivo 'R', origen '3')
+        await tx.zonas.create({
+          data: {
+            RunnerUID: runnerUID,
+            RunnerUIDRef: runnerUID, // Usar el mismo RunnerUID para registro inicial
+            puntos: puntosIniciales,
+            motivo: 'R', // Recibe
+            origen: '3', // Origen 3 (registro de organizador)
+            fecha: now,
+          },
+        });
+
+        // 3. Crear suscripción
+        const subscriptionUID = randomUUID();
+        await tx.subscriptions.create({
+          data: {
+            SubscriptionUID: subscriptionUID,
+            RunnerUID: runnerUID,
+            PlanCode: 'Organizador',
+            PlanVersion: 1,
+            BillingCycle: 'Yearly',
+            Status: 'Pending',
+            StartAt: now,
+          },
+        });
+
+        // 4. Crear registro en organizadores
+        const newOrganizador = await tx.organizadores.create({
+          data: {
+            RunnerUID: runnerUID,
+            NombreComercial: createOrganizadorDto.nombreComercial,
+            RazonSocial: createOrganizadorDto.razonSocial || null,
+            ContactoNombre: nombreCompleto,
+            ContactoEmail: createOrganizadorDto.correoElectronico,
+            ContactoTelefono: createOrganizadorDto.celular,
+            Ciudad: 'Mérida',
+            Estado: 'Yucatán',
+            Pais: 'México',
+          },
+        });
+
+        return {
+          user: newUser,
+          organizador: newOrganizador,
+          subscriptionUID: subscriptionUID,
+        };
+      });
+
+      return {
+        message: 'Organizador creado exitosamente',
+        status: 'success',
+        user: result.user,
+        organizador: result.organizador,
+      };
+    } catch (error) {
+      // Manejar errores de Prisma
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
+        const field = (error as any).meta?.target as string[] | undefined;
+        throw new ConflictException(
+          `Ya existe un registro con ${field?.join(', ') || 'estos datos'}`,
+        );
+      }
+      throw error;
+    }
   }
 }
