@@ -5,7 +5,7 @@ import { CreateSecUserDto } from './dto/create-sec_user.dto';
 import { UpdateSecUserDto } from './dto/update-sec_user.dto';
 import { CreateOrganizadorDto } from './dto/create-organizador.dto';
 import { createHash, randomUUID } from 'crypto';
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient, Prisma, organizadores_Estatus } from '@prisma/client';
 
 @Injectable()
 export class SecUsersService {
@@ -808,6 +808,7 @@ export class SecUsersService {
         });
 
         // 4. Crear registro en organizadores
+        // Usar el enum de Prisma directamente
         const newOrganizador = await tx.organizadores.create({
           data: {
             RunnerUID: runnerUID,
@@ -819,6 +820,7 @@ export class SecUsersService {
             Ciudad: 'Mérida',
             Estado: 'Yucatán',
             Pais: 'México',
+            Estatus: organizadores_Estatus.pendientez,
           },
         });
 
