@@ -808,7 +808,8 @@ export class SecUsersService {
         });
 
         // 4. Crear registro en organizadores
-        // Usar el enum de Prisma directamente
+        // Omitir Estatus para que use el valor por defecto de la base de datos
+        // La BD tiene 'pendiente' (sin z), no 'pendientez'
         const newOrganizador = await tx.organizadores.create({
           data: {
             RunnerUID: runnerUID,
@@ -820,7 +821,7 @@ export class SecUsersService {
             Ciudad: 'Mérida',
             Estado: 'Yucatán',
             Pais: 'México',
-            Estatus: organizadores_Estatus.pendientez,
+            // Estatus se establecerá automáticamente por el valor por defecto en la BD
           },
         });
 
