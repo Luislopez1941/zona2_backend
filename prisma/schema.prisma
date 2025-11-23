@@ -180,7 +180,7 @@ model organizadores {
   MaxDescuentoZ2      Int?                  @db.UnsignedInt
   PuntosEquivalencia  Int?                  @db.UnsignedInt
   DescuentoImporte    Decimal?              @db.Decimal(10, 2)
-  Estatus             organizadores_Estatus @default(pendientez)
+  Estatus             organizadores_Estatus @default(pendiente)
   FechaAlta           DateTime?             @default(now()) @db.Timestamp(0)
   FechaActualiza      DateTime?             @default(now()) @db.Timestamp(0)
 }
@@ -279,7 +279,7 @@ enum eventos_Estatus {
 }
 
 enum organizadores_Estatus {
-  pendientez
+  pendiente
   activo
   suspendido
   baja
