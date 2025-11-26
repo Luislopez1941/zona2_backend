@@ -66,7 +66,7 @@ CREATE TABLE `sec_users` (
     `activation_code` VARCHAR(32) NULL,
     `priv_admin` VARCHAR(1) NULL,
     `mfa` VARCHAR(255) NULL,
-    `picture` BLOB NULL,
+    `picture` MEDIUMBLOB NULL,
     `role` VARCHAR(128) NULL,
     `pswd_last_updated` TIMESTAMP(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
     `mfa_last_updated` DATETIME(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
@@ -119,15 +119,18 @@ CREATE TABLE `eventos` (
     `OrgID` INTEGER UNSIGNED NOT NULL,
     `Titulo` VARCHAR(255) NOT NULL,
     `Subtitulo` VARCHAR(255) NULL,
-    `TipoEvento` VARCHAR(50) NULL DEFAULT 'Carrera',
-    `Distancias` VARCHAR(150) NULL,
+    `TipoEvento` LONGTEXT NULL DEFAULT 'Carrera',
+    `Distancias` LONGTEXT NULL,
+    `Categorias` LONGTEXT NULL,
     `FechaEvento` DATE NOT NULL,
     `HoraEvento` TIME(0) NOT NULL,
     `Ciudad` VARCHAR(100) NULL,
     `Estado` VARCHAR(100) NULL,
+    `Pais` VARCHAR(100) NULL,
     `Lugar` VARCHAR(255) NULL,
     `UrlMapa` VARCHAR(500) NULL,
     `UrlCalendario` VARCHAR(500) NULL,
+    `imagen` MEDIUMBLOB NULL,
     `UrlImagen` VARCHAR(500) NULL,
     `UrlRegistro` VARCHAR(500) NULL,
     `UrlPagoDirecto` VARCHAR(500) NULL,
@@ -135,12 +138,14 @@ CREATE TABLE `eventos` (
     `MaxDescuentoZ2` INTEGER UNSIGNED NULL,
     `PuntosEquivalencia` INTEGER UNSIGNED NULL,
     `DescuentoImporte` DECIMAL(10, 2) NULL,
-    `UrlCartaExoneracion` VARCHAR(500) NULL,
-    `GuiaExpectador` VARCHAR(500) NULL,
+    `editCartaExoneracion` LONGTEXT NULL,
+    `UrlCartaExoneracion` VARCHAR(255) NULL,
+    `editGuiaExpectador` LONGTEXT NULL,
+    `GuiaExpectador` VARCHAR(255) NULL,
     `PrecioEvento` DECIMAL(10, 2) NULL,
     `Moneda` CHAR(3) NULL DEFAULT 'MXN',
-    `Estatus` ENUM('borrador', 'publicado', 'cerrado', 'cancelado') NULL DEFAULT 'borrador',
     `FechaAlta` TIMESTAMP(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `Estatus` VARCHAR(20) NOT NULL,
     `FechaActualiza` TIMESTAMP(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
 
     PRIMARY KEY (`EventoID`)
@@ -160,7 +165,7 @@ CREATE TABLE `organizadores` (
     `Estado` VARCHAR(100) NULL,
     `Pais` VARCHAR(100) NULL DEFAULT 'México',
     `UrlSitio` VARCHAR(500) NULL,
-    `UrlLogo` BLOB NULL,
+    `UrlLogo` MEDIUMBLOB NULL,
     `StripeAccountID` VARCHAR(255) NULL,
     `enlaceStripe` VARCHAR(255) NULL,
     `enlacePayPal` VARCHAR(255) NULL,
@@ -175,7 +180,7 @@ CREATE TABLE `organizadores` (
     `MaxDescuentoZ2` INTEGER UNSIGNED NULL,
     `PuntosEquivalencia` INTEGER UNSIGNED NULL,
     `DescuentoImporte` DECIMAL(10, 2) NULL,
-    `Estatus` ENUM('pendientez', 'activo', 'suspendido', 'baja') NOT NULL DEFAULT 'pendientez',
+    `Estatus` ENUM('pendiente', 'activo', 'suspendido', 'baja') NOT NULL DEFAULT 'pendiente',
     `FechaAlta` TIMESTAMP(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
     `FechaActualiza` TIMESTAMP(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
 
@@ -222,4 +227,133 @@ CREATE TABLE `subscriptions` (
 
     INDEX `FK_subscriptions_runner`(`RunnerUID`),
     PRIMARY KEY (`SubscriptionUID`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `categorias` (
+    `CategoriaID` INTEGER NOT NULL AUTO_INCREMENT,
+    `Nombre` VARCHAR(150) NOT NULL,
+
+    PRIMARY KEY (`CategoriaID`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `ciudades_mexico` (
+    `CiudadID` INTEGER NOT NULL AUTO_INCREMENT,
+    `Estado` VARCHAR(100) NOT NULL,
+    `Ciudad` VARCHAR(150) NOT NULL,
+
+    PRIMARY KEY (`CiudadID`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `disciplinas` (
+    `DisciplinaID` INTEGER NOT NULL AUTO_INCREMENT,
+    `Nombre` VARCHAR(200) NOT NULL,
+
+    PRIMARY KEY (`DisciplinaID`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `distancias` (
+    `DistanciaID` INTEGER NOT NULL AUTO_INCREMENT,
+    `Nombre` VARCHAR(200) NOT NULL,
+
+    PRIMARY KEY (`DistanciaID`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `equipos` (
+    `OrgID` INTEGER NOT NULL AUTO_INCREMENT,
+    `RunnerUID` CHAR(36) NULL,
+    `Logo` MEDIUMBLOB NULL,
+    `Contacto` VARCHAR(100) NULL,
+    `Celular` VARCHAR(36) NULL,
+    `Correo` VARCHAR(255) NULL,
+    `NombreEquipo` VARCHAR(100) NULL,
+    `AliasEquipo` VARCHAR(30) NULL,
+    `RFC` VARCHAR(20) NULL,
+    `Descripcion` VARCHAR(255) NULL,
+    `Ciudad` VARCHAR(100) NULL,
+    `Estado` VARCHAR(100) NULL,
+    `Pais` VARCHAR(100) NULL DEFAULT 'México',
+    `LugarEntrenamiento` VARCHAR(255) NULL,
+    `Disciplinas` LONGTEXT NULL,
+    `HorarioEntrenamiento` TIME(0) NULL,
+    `AtletasActivos` INTEGER NULL DEFAULT 0,
+    `EntrenadoresTotales` INTEGER NULL DEFAULT 0,
+    `ProgramasDisponibles` ENUM('Manual', 'Digital', 'Ambos') NULL DEFAULT 'Digital',
+    `EntrenadoresEspecialidad` VARCHAR(255) NULL,
+    `NivelEquipo` ENUM('Recreativo', 'Intermedio', 'Competitivo', 'Elite') NULL DEFAULT 'Intermedio',
+    `Certificacion` ENUM('Verificado', 'Afiliado', 'Independiente') NULL DEFAULT 'Independiente',
+    `IntegracionZona2` BOOLEAN NULL DEFAULT false,
+    `CostoMensual` DECIMAL(10, 2) NULL,
+    `ContactoWhatsApp` VARCHAR(20) NULL,
+    `RedSocial` VARCHAR(255) NULL,
+    `Activo` BOOLEAN NULL DEFAULT true,
+
+    PRIMARY KEY (`OrgID`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `estados_mexico` (
+    `EstadoID` INTEGER NOT NULL AUTO_INCREMENT,
+    `Nombre` VARCHAR(100) NOT NULL,
+
+    PRIMARY KEY (`EstadoID`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `inscripciones` (
+    `InscripcionID` INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+    `RunnerUID` CHAR(36) NOT NULL,
+    `EventoID` INTEGER UNSIGNED NOT NULL,
+    `RunnerNombre` VARCHAR(150) NULL,
+    `RunnerEmail` VARCHAR(150) NULL,
+    `RunnerTelefono` VARCHAR(30) NULL,
+    `DistanciaElegida` VARCHAR(50) NULL,
+    `CategoriaElegida` VARCHAR(50) NULL,
+    `TallaPlayera` VARCHAR(10) NULL,
+    `FolioAsignado` VARCHAR(50) NULL,
+    `PuntosUsados` INTEGER NULL DEFAULT 0,
+    `DescuentoAplicado` DECIMAL(10, 2) NULL DEFAULT 0.00,
+    `PrecioOriginal` DECIMAL(10, 2) NOT NULL,
+    `PrecioFinal` DECIMAL(10, 2) NOT NULL,
+    `Moneda` CHAR(3) NULL DEFAULT 'MXN',
+    `MetodoPago` VARCHAR(50) NULL,
+    `PagoTransaccionID` VARCHAR(100) NULL,
+    `PagoEstado` ENUM('Pendiente', 'Pagado', 'Fallido', 'Cancelado', 'Reembolsado') NULL DEFAULT 'Pendiente',
+    `PagoComision` DECIMAL(10, 2) NULL,
+    `PagoReciboURL` VARCHAR(500) NULL,
+    `IPRegistro` VARCHAR(45) NULL,
+    `UserAgent` VARCHAR(255) NULL,
+    `EstatusInscripcion` ENUM('Inscrito', 'Confirmado', 'Pagado', 'Cancelado', 'Finalizado') NULL DEFAULT 'Inscrito',
+    `FechaInscripcion` DATETIME(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `FechaActualizacion` TIMESTAMP(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
+
+    PRIMARY KEY (`InscripcionID`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `paises` (
+    `PaisID` INTEGER NOT NULL AUTO_INCREMENT,
+    `Nombre` VARCHAR(150) NOT NULL,
+
+    PRIMARY KEY (`PaisID`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `tokens_sms` (
+    `TokenID` INTEGER NOT NULL AUTO_INCREMENT,
+    `Telefono` VARCHAR(20) NOT NULL,
+    `Codigo` VARCHAR(6) NOT NULL,
+    `FechaCreacion` DATETIME(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `FechaExpiracion` DATETIME(0) NOT NULL,
+    `Estado` ENUM('activo', 'usado', 'expirado', 'bloqueado') NOT NULL DEFAULT 'activo',
+    `IP` VARCHAR(45) NULL,
+    `Intentos` INTEGER NULL DEFAULT 0,
+
+    INDEX `idx_codigo`(`Codigo`),
+    INDEX `idx_telefono`(`Telefono`),
+    PRIMARY KEY (`TokenID`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

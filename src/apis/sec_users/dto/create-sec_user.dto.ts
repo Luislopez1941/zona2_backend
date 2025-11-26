@@ -196,4 +196,7 @@ export class CreateSecUserDto {
   @IsOptional()
   @IsString()
   role?: string;
+
+  @IsOptional()
+  picture?: any;
 }

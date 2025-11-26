@@ -405,6 +405,102 @@ export class SecUsersService {
   }
 
   /**
+   * Actualiza un usuario por RunnerUID
+   */
+  async updateByRunnerUID(runnerUID: string, updateSecUserDto: UpdateSecUserDto) {
+    // Buscar el usuario por RunnerUID
+    const existingUser = await this.prisma.sec_users.findFirst({
+      where: { RunnerUID: runnerUID },
+    });
+
+    if (!existingUser) {
+      throw new NotFoundException(`Usuario con RunnerUID '${runnerUID}' no encontrado`);
+    }
+
+    // Verificar si se está actualizando el email y si ya existe
+    if (updateSecUserDto.email && updateSecUserDto.email !== existingUser.email) {
+      const existingUserByEmail = await this.prisma.sec_users.findFirst({
+        where: { email: updateSecUserDto.email },
+      });
+
+      if (existingUserByEmail && existingUserByEmail.login !== existingUser.login) {
+        throw new ConflictException(
+          `El correo '${updateSecUserDto.email}' ya está registrado`,
+        );
+      }
+    }
+
+    // Extraer campos que necesitan conversión especial
+    const {
+      StravaAthleteID,
+      Z2TotalHistorico,
+      FechaUltimaActividad,
+      FechaRenovacionMembresia,
+      FechaUltimaZ2,
+      fechaNacimiento,
+      picture,
+      ...restFields
+    } = updateSecUserDto;
+
+    // Construir el objeto de actualización
+    const updateData: any = {
+      ...restFields,
+    };
+
+    // Convertir picture de base64 a Buffer si está presente
+    if (picture !== undefined) {
+      if (picture === null) {
+        updateData.picture = null;
+      } else if (typeof picture === 'string' && picture.length > 0) {
+        // Remover el prefijo data:image/...;base64, si existe
+        const base64Data = picture.replace(/^data:image\/\w+;base64,/, '');
+        updateData.picture = Buffer.from(base64Data, 'base64');
+      }
+    }
+
+    // Convertir campos BigInt de string a BigInt si están presentes
+    if (StravaAthleteID !== undefined) {
+      updateData.StravaAthleteID = StravaAthleteID
+        ? BigInt(StravaAthleteID)
+        : null;
+    }
+
+    if (Z2TotalHistorico !== undefined) {
+      updateData.Z2TotalHistorico = Z2TotalHistorico
+        ? BigInt(Z2TotalHistorico)
+        : BigInt(0);
+    }
+
+    // Convertir fechas de string a Date si están presentes
+    if (FechaUltimaActividad) {
+      updateData.FechaUltimaActividad = new Date(FechaUltimaActividad);
+    }
+
+    if (FechaRenovacionMembresia) {
+      updateData.FechaRenovacionMembresia = new Date(FechaRenovacionMembresia);
+    }
+
+    if (FechaUltimaZ2) {
+      updateData.FechaUltimaZ2 = new Date(FechaUltimaZ2);
+    }
+
+    if (fechaNacimiento) {
+      updateData.fechaNacimiento = new Date(fechaNacimiento);
+    }
+
+    const updatedUser = await this.prisma.sec_users.update({
+      where: { login: existingUser.login },
+      data: updateData,
+    });
+
+    return {
+      message: 'Usuario actualizado exitosamente',
+      status: 'success',
+      user: updatedUser,
+    };
+  }
+
+  /**
    * Otorga zonas entre dos usuarios
    * @param runnerUIDA RunnerUID de quien otorga (recibe 50 puntos)
    * @param runnerUID RunnerUID de quien recibe (recibe 100 puntos)

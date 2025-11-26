@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Put, Param, Delete, Req, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 import { SecUsersService } from './sec_users.service';
 import { CreateSecUserDto } from './dto/create-sec_user.dto';
@@ -95,11 +95,16 @@ export class SecUsersController {
     return this.secUsersService.changePassword(identifier, resetPasswordDto.code, resetPasswordDto.password);
   }
 
-  @Patch(':login')
-  update(@Param('login') login: string, @Body() updateSecUserDto: UpdateSecUserDto) {
-    return this.secUsersService.update(login, updateSecUserDto);
-  }
+  // @Patch(':login')
+  // update(@Param('login') login: string, @Body() updateSecUserDto: UpdateSecUserDto) {
+  //   return this.secUsersService.update(login, updateSecUserDto);
+  // }
 
+  @Put('update/:RunnerUID')
+  update(@Param('RunnerUID') RunnerUID: string, @Body() updateSecUserDto: UpdateSecUserDto) {
+    return this.secUsersService.updateByRunnerUID(RunnerUID, updateSecUserDto);
+  }
+  
   @Delete(':login')
   remove(@Param('login') login: string) {
     return this.secUsersService.remove(login);

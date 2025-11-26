@@ -8,10 +8,11 @@ import { ActividadesModule } from './apis/actividades/actividades.module';
 import { ZonasModule } from './apis/zonas/zonas.module';
 import { EstablecimientosModule } from './apis/establecimientos/establecimientos.module';
 import { LoginModule } from './apis/auth/login/login.module';
+import { EventosModule } from './apis/eventos/eventos.module';
 
 
 @Module({
-  imports: [PrismaModule, SmsModule, SecUsersModule, ActividadesModule, ZonasModule, EstablecimientosModule, LoginModule],
+  imports: [PrismaModule, SmsModule, SecUsersModule, ActividadesModule, ZonasModule, EstablecimientosModule, LoginModule, EventosModule],
   controllers: [AppController],
   providers: [AppService],
 })

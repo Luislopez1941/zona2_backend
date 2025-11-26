@@ -7,7 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 model actividades {
   actID          Int      @id @default(autoincrement())
   RunnerUID      String   @db.VarChar(36)
@@ -74,7 +73,7 @@ model sec_users {
   activation_code          String?   @db.VarChar(32)
   priv_admin               String?   @db.VarChar(1)
   mfa                      String?   @db.VarChar(255)
-  picture                  Bytes?    @db.Blob
+  picture                  Bytes?    @db.MediumBlob
   role                     String?   @db.VarChar(128)
   pswd_last_updated        DateTime? @default(now()) @updatedAt @db.Timestamp(0)
   mfa_last_updated         DateTime? @default(now()) @db.DateTime(0)
@@ -122,33 +121,38 @@ model establecimientos {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model eventos {
-  EventoID            Int              @id @default(autoincrement()) @db.UnsignedInt
-  OrgID               Int              @db.UnsignedInt
-  Titulo              String           @db.VarChar(255)
-  Subtitulo           String?          @db.VarChar(255)
-  TipoEvento          String?          @default("Carrera") @db.VarChar(50)
-  Distancias          String?          @db.VarChar(150)
-  FechaEvento         DateTime         @db.Date
-  HoraEvento          DateTime         @db.Time(0)
-  Ciudad              String?          @db.VarChar(100)
-  Estado              String?          @db.VarChar(100)
-  Lugar               String?          @db.VarChar(255)
-  UrlMapa             String?          @db.VarChar(500)
-  UrlCalendario       String?          @db.VarChar(500)
-  UrlImagen           String?          @db.VarChar(500)
-  UrlRegistro         String?          @db.VarChar(500)
-  UrlPagoDirecto      String?          @db.VarChar(500)
-  MaxPuntosZ2         Int?             @db.UnsignedInt
-  MaxDescuentoZ2      Int?             @db.UnsignedInt
-  PuntosEquivalencia  Int?             @db.UnsignedInt
-  DescuentoImporte    Decimal?         @db.Decimal(10, 2)
-  UrlCartaExoneracion String?          @db.VarChar(500)
-  GuiaExpectador      String?          @db.VarChar(500)
-  PrecioEvento        Decimal?         @db.Decimal(10, 2)
-  Moneda              String?          @default("MXN") @db.Char(3)
-  Estatus             eventos_Estatus? @default(borrador)
-  FechaAlta           DateTime         @default(now()) @db.Timestamp(0)
-  FechaActualiza      DateTime         @default(now()) @db.Timestamp(0)
+  EventoID             Int      @id @default(autoincrement()) @db.UnsignedInt
+  OrgID                Int      @db.UnsignedInt
+  Titulo               String   @db.VarChar(255)
+  Subtitulo            String?  @db.VarChar(255)
+  TipoEvento           String?  @default("Carrera") @db.LongText
+  Distancias           String?  @db.LongText
+  Categorias           String?  @db.LongText
+  FechaEvento          DateTime @db.Date
+  HoraEvento           DateTime @db.Time(0)
+  Ciudad               String?  @db.VarChar(100)
+  Estado               String?  @db.VarChar(100)
+  Pais                 String?  @db.VarChar(100)
+  Lugar                String?  @db.VarChar(255)
+  UrlMapa              String?  @db.VarChar(500)
+  UrlCalendario        String?  @db.VarChar(500)
+  imagen               Bytes?   @db.MediumBlob
+  UrlImagen            String?  @db.VarChar(500)
+  UrlRegistro          String?  @db.VarChar(500)
+  UrlPagoDirecto       String?  @db.VarChar(500)
+  MaxPuntosZ2          Int?     @db.UnsignedInt
+  MaxDescuentoZ2       Int?     @db.UnsignedInt
+  PuntosEquivalencia   Int?     @db.UnsignedInt
+  DescuentoImporte     Decimal? @db.Decimal(10, 2)
+  editCartaExoneracion String?  @db.LongText
+  UrlCartaExoneracion  String?  @db.VarChar(255)
+  editGuiaExpectador   String?  @db.LongText
+  GuiaExpectador       String?  @db.VarChar(255)
+  PrecioEvento         Decimal? @db.Decimal(10, 2)
+  Moneda               String?  @default("MXN") @db.Char(3)
+  FechaAlta            DateTime @default(now()) @db.Timestamp(0)
+  Estatus              String   @db.VarChar(20)
+  FechaActualiza       DateTime @default(now()) @db.Timestamp(0)
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -165,7 +169,7 @@ model organizadores {
   Estado              String?               @db.VarChar(100)
   Pais                String?               @default("México") @db.VarChar(100)
   UrlSitio            String?               @db.VarChar(500)
-  UrlLogo             Bytes?                @db.Blob
+  UrlLogo             Bytes?                @db.MediumBlob
   StripeAccountID     String?               @db.VarChar(255)
   enlaceStripe        String?               @db.VarChar(255)
   enlacePayPal        String?               @db.VarChar(255)
@@ -223,6 +227,111 @@ model subscriptions {
   @@index([RunnerUID], map: "FK_subscriptions_runner")
 }
 
+model categorias {
+  CategoriaID Int    @id @default(autoincrement())
+  Nombre      String @db.VarChar(150)
+}
+
+model ciudades_mexico {
+  CiudadID Int    @id @default(autoincrement())
+  Estado   String @db.VarChar(100)
+  Ciudad   String @db.VarChar(150)
+}
+
+model disciplinas {
+  DisciplinaID Int    @id @default(autoincrement())
+  Nombre       String @db.VarChar(200)
+}
+
+model distancias {
+  DistanciaID Int    @id @default(autoincrement())
+  Nombre      String @db.VarChar(200)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model equipos {
+  OrgID                    Int                           @id @default(autoincrement())
+  RunnerUID                String?                       @db.Char(36)
+  Logo                     Bytes?                        @db.MediumBlob
+  Contacto                 String?                       @db.VarChar(100)
+  Celular                  String?                       @db.VarChar(36)
+  Correo                   String?                       @db.VarChar(255)
+  NombreEquipo             String?                       @db.VarChar(100)
+  AliasEquipo              String?                       @db.VarChar(30)
+  RFC                      String?                       @db.VarChar(20)
+  Descripcion              String?                       @db.VarChar(255)
+  Ciudad                   String?                       @db.VarChar(100)
+  Estado                   String?                       @db.VarChar(100)
+  Pais                     String?                       @default("México") @db.VarChar(100)
+  LugarEntrenamiento       String?                       @db.VarChar(255)
+  Disciplinas              String?                       @db.LongText
+  HorarioEntrenamiento     DateTime?                     @db.Time(0)
+  AtletasActivos           Int?                          @default(0)
+  EntrenadoresTotales      Int?                          @default(0)
+  ProgramasDisponibles     equipos_ProgramasDisponibles? @default(Digital)
+  EntrenadoresEspecialidad String?                       @db.VarChar(255)
+  NivelEquipo              equipos_NivelEquipo?          @default(Intermedio)
+  Certificacion            equipos_Certificacion?        @default(Independiente)
+  IntegracionZona2         Boolean?                      @default(false)
+  CostoMensual             Decimal?                      @db.Decimal(10, 2)
+  ContactoWhatsApp         String?                       @db.VarChar(20)
+  RedSocial                String?                       @db.VarChar(255)
+  Activo                   Boolean?                      @default(true)
+}
+
+model estados_mexico {
+  EstadoID Int    @id @default(autoincrement())
+  Nombre   String @db.VarChar(100)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model inscripciones {
+  InscripcionID      Int                               @id @default(autoincrement()) @db.UnsignedInt
+  RunnerUID          String                            @db.Char(36)
+  EventoID           Int                               @db.UnsignedInt
+  RunnerNombre       String?                           @db.VarChar(150)
+  RunnerEmail        String?                           @db.VarChar(150)
+  RunnerTelefono     String?                           @db.VarChar(30)
+  DistanciaElegida   String?                           @db.VarChar(50)
+  CategoriaElegida   String?                           @db.VarChar(50)
+  TallaPlayera       String?                           @db.VarChar(10)
+  FolioAsignado      String?                           @db.VarChar(50)
+  PuntosUsados       Int?                              @default(0)
+  DescuentoAplicado  Decimal?                          @default(0.00) @db.Decimal(10, 2)
+  PrecioOriginal     Decimal                           @db.Decimal(10, 2)
+  PrecioFinal        Decimal                           @db.Decimal(10, 2)
+  Moneda             String?                           @default("MXN") @db.Char(3)
+  MetodoPago         String?                           @db.VarChar(50)
+  PagoTransaccionID  String?                           @db.VarChar(100)
+  PagoEstado         inscripciones_PagoEstado?         @default(Pendiente)
+  PagoComision       Decimal?                          @db.Decimal(10, 2)
+  PagoReciboURL      String?                           @db.VarChar(500)
+  IPRegistro         String?                           @db.VarChar(45)
+  UserAgent          String?                           @db.VarChar(255)
+  EstatusInscripcion inscripciones_EstatusInscripcion? @default(Inscrito)
+  FechaInscripcion   DateTime                          @default(now()) @db.DateTime(0)
+  FechaActualizacion DateTime                          @default(now()) @db.Timestamp(0)
+}
+
+model paises {
+  PaisID Int    @id @default(autoincrement())
+  Nombre String @db.VarChar(150)
+}
+
+model tokens_sms {
+  TokenID         Int               @id @default(autoincrement())
+  Telefono        String            @db.VarChar(20)
+  Codigo          String            @db.VarChar(6)
+  FechaCreacion   DateTime          @default(now()) @db.DateTime(0)
+  FechaExpiracion DateTime          @db.DateTime(0)
+  Estado          tokens_sms_Estado @default(activo)
+  IP              String?           @db.VarChar(45)
+  Intentos        Int?              @default(0)
+
+  @@index([Codigo], map: "idx_codigo")
+  @@index([Telefono], map: "idx_telefono")
+}
+
 enum establecimientos_Estatus {
   pendiente
   activo
@@ -271,11 +380,46 @@ enum subscriptions_PaymentProvider {
   Other
 }
 
-enum eventos_Estatus {
-  borrador
-  publicado
-  cerrado
-  cancelado
+enum tokens_sms_Estado {
+  activo
+  usado
+  expirado
+  bloqueado
+}
+
+enum inscripciones_PagoEstado {
+  Pendiente
+  Pagado
+  Fallido
+  Cancelado
+  Reembolsado
+}
+
+enum equipos_ProgramasDisponibles {
+  Manual
+  Digital
+  Ambos
+}
+
+enum equipos_NivelEquipo {
+  Recreativo
+  Intermedio
+  Competitivo
+  Elite
+}
+
+enum equipos_Certificacion {
+  Verificado
+  Afiliado
+  Independiente
+}
+
+enum inscripciones_EstatusInscripcion {
+  Inscrito
+  Confirmado
+  Pagado
+  Cancelado
+  Finalizado
 }
 
 enum organizadores_Estatus {
