@@ -27,6 +27,16 @@ export class BigIntSerializerInterceptor implements NestInterceptor {
       return obj.toString();
     }
 
+    // Manejar Date antes de otros objetos
+    if (obj instanceof Date) {
+      return obj.toISOString();
+    }
+
+    // Manejar Decimal de Prisma
+    if (obj && typeof obj === 'object' && typeof obj.toNumber === 'function') {
+      return obj.toNumber();
+    }
+
     if (Array.isArray(obj)) {
       return obj.map((item) => this.transformBigInt(item));
     }

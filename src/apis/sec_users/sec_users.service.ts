@@ -438,7 +438,6 @@ export class SecUsersService {
       FechaRenovacionMembresia,
       FechaUltimaZ2,
       fechaNacimiento,
-      picture,
       ...restFields
     } = updateSecUserDto;
 
@@ -446,17 +445,6 @@ export class SecUsersService {
     const updateData: any = {
       ...restFields,
     };
-
-    // Convertir picture de base64 a Buffer si está presente
-    if (picture !== undefined) {
-      if (picture === null) {
-        updateData.picture = null;
-      } else if (typeof picture === 'string' && picture.length > 0) {
-        // Remover el prefijo data:image/...;base64, si existe
-        const base64Data = picture.replace(/^data:image\/\w+;base64,/, '');
-        updateData.picture = Buffer.from(base64Data, 'base64');
-      }
-    }
 
     // Convertir campos BigInt de string a BigInt si están presentes
     if (StravaAthleteID !== undefined) {
