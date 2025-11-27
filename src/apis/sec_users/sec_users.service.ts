@@ -5,7 +5,7 @@ import { CreateSecUserDto } from './dto/create-sec_user.dto';
 import { UpdateSecUserDto } from './dto/update-sec_user.dto';
 import { CreateOrganizadorDto } from './dto/create-organizador.dto';
 import { createHash, randomUUID } from 'crypto';
-import { PrismaClient, Prisma, organizadores_Estatus } from '@prisma/client';
+import { PrismaClient, Prisma, organizadores_Estatus, establecimientos_Estatus } from '@prisma/client';
 
 @Injectable()
 export class SecUsersService {
@@ -84,24 +84,155 @@ export class SecUsersService {
   /**
    * Pre-registro: crea un usuario y genera automáticamente RunnerUIDRef
    * RunnerUIDRef siempre se genera automáticamente, se ignora cualquier valor enviado
+   * Solo asigna 10000 puntos en WalletPuntosI, TipoMembresia = 'R', sin puntos en Z2
    */
   async preRegister(createSecUserDto: CreateSecUserDto) {
-    // Siempre generar RunnerUIDRef automáticamente (ignorar cualquier valor enviado)
-    const generatedRunnerUIDRef = this.generateRunnerUIDRef();
-    createSecUserDto.RunnerUIDRef = generatedRunnerUIDRef;
+    // Verificar si el email ya existe
+    const existingUserByEmail = await this.prisma.sec_users.findFirst({
+      where: { email: createSecUserDto.email },
+    });
 
-    // Establecer TipoMembresia como "E" por defecto si no se proporciona
-    if (!createSecUserDto.TipoMembresia) {
-      createSecUserDto.TipoMembresia = 'E';
+    if (existingUserByEmail) {
+      return {
+        message: 'Correo existente',
+        status: 'warning',
+        user: undefined,
+      };
     }
 
-    console.log('=== DEBUG preRegister ===');
-    console.log('RunnerUIDRef generado:', generatedRunnerUIDRef);
-    console.log('TipoMembresia:', createSecUserDto.TipoMembresia);
-    console.log('========================');
+    // Verificar si el teléfono ya existe
+    const existingUserByPhone = await this.prisma.sec_users.findFirst({
+      where: { phone: createSecUserDto.phone },
+    });
 
-    // Llamar al método create normal
-    return this.create(createSecUserDto);
+    if (existingUserByPhone) {
+      return {
+        message: 'Numero existente',
+        status: 'warning',
+        user: undefined,
+      };
+    }
+
+    // Verificar si el login ya existe
+    const existingUserByLogin = await this.prisma.sec_users.findUnique({
+      where: { login: createSecUserDto.login },
+    });
+
+    if (existingUserByLogin) {
+      return {
+        message: `El usuario con login '${createSecUserDto.login}' ya existe`,
+        status: 'warning',
+        user: undefined,
+      };
+    }
+
+    // Siempre generar RunnerUIDRef automáticamente (ignorar cualquier valor enviado)
+    const generatedRunnerUIDRef = this.generateRunnerUIDRef();
+    
+    // Generar RunnerUID con formato Z2R...
+    const runnerUID = this.generateRunnerUID();
+    
+    // Generar AliasRunner con formato R...
+    const aliasRunner = this.generateAliasRunner();
+    
+    // Generar contraseña por defecto si no se proporciona (hasheada con SHA1)
+    const password = createSecUserDto.pswd 
+      ? createHash('sha1').update(createSecUserDto.pswd).digest('hex')
+      : this.generateDefaultPassword();
+    
+    // Calcular fechas
+    const now = new Date();
+    const fechaRenovacionMembresia = new Date(now);
+    fechaRenovacionMembresia.setFullYear(fechaRenovacionMembresia.getFullYear() + 1);
+    
+    // Valores para pre-registro
+    const puntosIniciales = 10000;
+    const suscripcionInicial = 399.00;
+    
+    try {
+      // Crear usuario en una transacción
+      const user = await this.prisma.$transaction(async (tx) => {
+        // Preparar datos del usuario para pre-registro
+        const userData = {
+          RunnerUID: runnerUID,
+          AliasRunner: aliasRunner,
+          name: createSecUserDto.name,
+          login: createSecUserDto.login,
+          phone: createSecUserDto.phone,
+          email: createSecUserDto.email,
+          pswd: password,
+          RFC: createSecUserDto.RFC,
+          Ciudad: createSecUserDto.Ciudad,
+          Estado: createSecUserDto.Estado,
+          Pais: createSecUserDto.Pais,
+          TipoMembresia: 'R', // Siempre 'R' para pre-registro
+          DisciplinaPrincipal: createSecUserDto.DisciplinaPrincipal,
+          FechaRenovacionMembresia: fechaRenovacionMembresia,
+          fechaNacimiento: createSecUserDto.fechaNacimiento 
+            ? new Date(createSecUserDto.fechaNacimiento) 
+            : null,
+          Genero: createSecUserDto.Genero,
+          Peso: createSecUserDto.Peso,
+          Estatura: createSecUserDto.Estatura,
+          EmergenciaContacto: createSecUserDto.EmergenciaContacto,
+          EmergenciaCelular: createSecUserDto.EmergenciaCelular,
+          EmergenciaParentesco: createSecUserDto.EmergenciaParentesco,
+          equipoID: createSecUserDto.equipoID,
+          RunnerUIDRef: generatedRunnerUIDRef,
+          active: createSecUserDto.active,
+          activation_code: createSecUserDto.activation_code,
+          priv_admin: createSecUserDto.priv_admin,
+          mfa: createSecUserDto.mfa,
+          role: createSecUserDto.role,
+          // NO agregar puntos en Z2 para pre-registro
+          Z2TotalHistorico: null,
+          Z2Recibidas30d: null,
+          // Solo WalletPuntosI con 10000 puntos, WalletPuntos queda null
+          WalletPuntos: null,
+          WalletPuntosI: puntosIniciales,
+          WalletSaldoMXN: createSecUserDto.WalletSaldoMXN ?? 0.00,
+          GananciasAcumuladasMXN: createSecUserDto.GananciasAcumuladasMXN ?? 0.00,
+          InvitacionesTotales: null,
+          InvitacionesMensuales: null,
+          SuscripcionMXN: createSecUserDto.SuscripcionMXN ?? suscripcionInicial,
+          PorcentajeCumplimiento: createSecUserDto.PorcentajeCumplimiento ?? 0.00,
+          NivelRunner: createSecUserDto.NivelRunner,
+          CFDIEmitido: createSecUserDto.CFDIEmitido ?? false,
+          StravaAthleteID: createSecUserDto.StravaAthleteID
+            ? BigInt(createSecUserDto.StravaAthleteID)
+            : null,
+          GarminUserID: createSecUserDto.GarminUserID,
+          Z2Otorgadas30d: null,
+          Actividades30d: null,
+          NivelMensual: createSecUserDto.NivelMensual,
+          FechaUltimaActividad: createSecUserDto.FechaUltimaActividad
+            ? new Date(createSecUserDto.FechaUltimaActividad)
+            : null,
+        };
+
+        // Crear usuario
+        const newUser = await tx.sec_users.create({
+          data: userData,
+        });
+
+        return newUser;
+      });
+
+      return {
+        message: 'Pre-registro exitoso',
+        status: 'success',
+        user: user,
+      };
+    } catch (error) {
+      // Manejar errores de Prisma (como violación de restricción única)
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
+        const field = (error as any).meta?.target as string[] | undefined;
+        throw new ConflictException(
+          `Ya existe un usuario con ${field?.join(', ') || 'estos datos'}`,
+        );
+      }
+      throw error;
+    }
   }
 
   async create(createSecUserDto: CreateSecUserDto) {
@@ -832,7 +963,7 @@ export class SecUsersService {
     fechaRenovacionMembresia.setFullYear(fechaRenovacionMembresia.getFullYear() + 1);
     
     // Valores para organizador
-    const puntosIniciales = 1000;
+    const puntosIniciales = 10000;
     const suscripcionInicial = 399.00;
     
     try {
@@ -854,30 +985,18 @@ export class SecUsersService {
             TipoMembresia: 'O', // Organizador
             active: 'Y',
             WalletPuntosI: puntosIniciales,
-            WalletPuntos: puntosIniciales,
+            WalletPuntos: null, // Solo WalletPuntosI
             SuscripcionMXN: suscripcionInicial,
             FechaRenovacionMembresia: fechaRenovacionMembresia,
-            Z2TotalHistorico: BigInt(puntosIniciales),
-            Z2Recibidas30d: puntosIniciales,
+            Z2TotalHistorico: null, // No registrar en Z2
+            Z2Recibidas30d: null, // No registrar en Z2
             Ciudad: 'Mérida',
             Estado: 'Yucatán',
             Pais: 'México',
           },
         });
 
-        // 2. Crear registro en zonas (1000 puntos, motivo 'R', origen '3')
-        await tx.zonas.create({
-          data: {
-            RunnerUID: runnerUID,
-            RunnerUIDRef: runnerUID, // Usar el mismo RunnerUID para registro inicial
-            puntos: puntosIniciales,
-            motivo: 'R', // Recibe
-            origen: '3', // Origen 3 (registro de organizador)
-            fecha: now,
-          },
-        });
-
-        // 3. Crear suscripción
+        // 2. Crear suscripción
         const subscriptionUID = randomUUID();
         await tx.subscriptions.create({
           data: {
@@ -891,7 +1010,7 @@ export class SecUsersService {
           },
         });
 
-        // 4. Crear registro en organizadores
+        // 3. Crear registro en organizadores
         const newOrganizador = await tx.organizadores.create({
           data: {
             RunnerUID: runnerUID,
@@ -919,6 +1038,152 @@ export class SecUsersService {
         status: 'success',
         user: result.user,
         organizador: result.organizador,
+      };
+    } catch (error) {
+      // Manejar errores de Prisma
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
+        const field = (error as any).meta?.target as string[] | undefined;
+        throw new ConflictException(
+          `Ya existe un registro con ${field?.join(', ') || 'estos datos'}`,
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Crea un registro completo de establecimiento:
+   * 1. Crea usuario en sec_users
+   * 2. Crea registro en zonas (1000 puntos)
+   * 3. Crea suscripción
+   * 4. Crea registro en establecimientos
+   */
+  async createEstablecimiento(createOrganizadorDto: CreateOrganizadorDto) {
+    // Verificar si el email ya existe
+    const existingUserByEmail = await this.prisma.sec_users.findFirst({
+      where: { email: createOrganizadorDto.correoElectronico },
+    });
+
+    if (existingUserByEmail) {
+      return {
+        message: 'Correo existente',
+        status: 'warning',
+        user: undefined,
+      };
+    }
+
+    // Verificar si el teléfono ya existe
+    const existingUserByPhone = await this.prisma.sec_users.findFirst({
+      where: { phone: createOrganizadorDto.celular },
+    });
+
+    if (existingUserByPhone) {
+      return {
+        message: 'Numero existente',
+        status: 'warning',
+        user: undefined,
+      };
+    }
+
+    // Verificar si el login (phone) ya existe
+    const existingUserByLogin = await this.prisma.sec_users.findUnique({
+      where: { login: createOrganizadorDto.celular },
+    });
+
+    if (existingUserByLogin) {
+      return {
+        message: `El usuario con login '${createOrganizadorDto.celular}' ya existe`,
+        status: 'warning',
+        user: undefined,
+      };
+    }
+
+    // Generar RunnerUID con formato Z2R...
+    const runnerUID = this.generateRunnerUID();
+    
+    // Generar AliasRunner con formato R...
+    const aliasRunner = this.generateAliasRunner();
+    
+    // Generar contraseña por defecto (hasheada con SHA1)
+    const password = this.generateDefaultPassword();
+    
+    // Calcular fechas
+    const now = new Date();
+    const fechaRenovacionMembresia = new Date(now);
+    fechaRenovacionMembresia.setFullYear(fechaRenovacionMembresia.getFullYear() + 1);
+    
+    // Valores para establecimiento
+    const puntosIniciales = 10000;
+    const suscripcionInicial = 399.00;
+    
+    try {
+      // Crear todos los registros en una transacción
+      const result = await this.prisma.$transaction(async (tx) => {
+        // Usar nombreCompleto si viene, sino usar nombreComercial como fallback
+        const nombreCompleto = createOrganizadorDto.nombreCompleto || createOrganizadorDto.nombreComercial;
+        
+        // 1. Crear usuario en sec_users
+        const newUser = await tx.sec_users.create({
+          data: {
+            RunnerUID: runnerUID,
+            AliasRunner: aliasRunner,
+            name: nombreCompleto,
+            login: createOrganizadorDto.celular, // login = celular
+            phone: createOrganizadorDto.celular,
+            email: createOrganizadorDto.correoElectronico,
+            pswd: password,
+            TipoMembresia: 'S', // Establecimiento
+            active: 'Y',
+            WalletPuntosI: puntosIniciales,
+            WalletPuntos: null, // Solo WalletPuntosI
+            SuscripcionMXN: suscripcionInicial,
+            FechaRenovacionMembresia: fechaRenovacionMembresia,
+            Z2TotalHistorico: null, // No registrar en Z2
+            Z2Recibidas30d: null, // No registrar en Z2
+            Ciudad: 'Mérida',
+            Estado: 'Yucatán',
+            Pais: 'México',
+          },
+        });
+
+        // 2. Crear suscripción
+        const subscriptionUID = randomUUID();
+        await tx.subscriptions.create({
+          data: {
+            SubscriptionUID: subscriptionUID,
+            RunnerUID: runnerUID,
+            PlanCode: 'Organizador', // Mismo plan que organizadores
+            PlanVersion: 1,
+            BillingCycle: 'Yearly',
+            Status: 'Pending',
+            StartAt: now,
+          },
+        });
+
+        // 3. Crear registro en establecimientos
+        const newEstablecimiento = await tx.establecimientos.create({
+          data: {
+            NombreComercial: createOrganizadorDto.nombreComercial,
+            Descripcion: createOrganizadorDto.razonSocial || null,
+            Ciudad: 'Mérida',
+            Estado: 'Yucatán',
+            Pais: 'México',
+            Estatus: establecimientos_Estatus.pendiente,
+          },
+        });
+
+        return {
+          user: newUser,
+          establecimiento: newEstablecimiento,
+          subscriptionUID: subscriptionUID,
+        };
+      });
+
+      return {
+        message: 'Establecimiento creado exitosamente',
+        status: 'success',
+        user: result.user,
+        establecimiento: result.establecimiento,
       };
     } catch (error) {
       // Manejar errores de Prisma

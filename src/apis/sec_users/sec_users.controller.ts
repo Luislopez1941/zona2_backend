@@ -27,9 +27,14 @@ export class SecUsersController {
     return this.secUsersService.preRegister(createSecUserDto);
   }
 
+  @Post('organizers-register')
+  organizers(@Body() createOrganizadorDto: CreateOrganizadorDto) {
+    return this.secUsersService.createOrganizador(createOrganizadorDto);
+  }
+
   @Post('establishments-register')
   establishmentsRegister(@Body() createOrganizadorDto: CreateOrganizadorDto) {
-    return this.secUsersService.createOrganizador(createOrganizadorDto);
+    return this.secUsersService.createEstablecimiento(createOrganizadorDto);
   }
 
   @Post('create')
