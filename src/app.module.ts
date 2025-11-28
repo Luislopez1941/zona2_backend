@@ -9,10 +9,11 @@ import { ZonasModule } from './apis/zonas/zonas.module';
 import { EstablecimientosModule } from './apis/establecimientos/establecimientos.module';
 import { LoginModule } from './apis/auth/login/login.module';
 import { EventosModule } from './apis/eventos/eventos.module';
+import { PromocionesModule } from './apis/promociones/promociones.module';
 
 
 @Module({
-  imports: [PrismaModule, SmsModule, SecUsersModule, ActividadesModule, ZonasModule, EstablecimientosModule, LoginModule, EventosModule],
+  imports: [PrismaModule, SmsModule, SecUsersModule, ActividadesModule, ZonasModule, EstablecimientosModule, LoginModule, EventosModule, PromocionesModule],
   controllers: [AppController],
   providers: [AppService],
 })

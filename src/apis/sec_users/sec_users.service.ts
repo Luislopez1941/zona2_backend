@@ -82,8 +82,8 @@ export class SecUsersService {
   }
 
   /**
-   * Pre-registro: crea un usuario y genera automáticamente RunnerUIDRef
-   * RunnerUIDRef siempre se genera automáticamente, se ignora cualquier valor enviado
+   * Pre-registro: crea un usuario
+   * Si viene RunnerUIDRef, se usa ese y se asignan 500 puntos en WalletPuntos a ambos usuarios
    * Solo asigna 10000 puntos en WalletPuntosI, TipoMembresia = 'R', sin puntos en Z2
    */
   async preRegister(createSecUserDto: CreateSecUserDto) {
@@ -126,8 +126,31 @@ export class SecUsersService {
       };
     }
 
-    // Siempre generar RunnerUIDRef automáticamente (ignorar cualquier valor enviado)
-    const generatedRunnerUIDRef = this.generateRunnerUIDRef();
+    // Si viene RunnerUIDRef, buscar el usuario referidor
+    let referidor: { login: string; WalletPuntos: number | null } | null = null;
+    let finalRunnerUIDRef: string | null = null;
+    
+    if (createSecUserDto.RunnerUIDRef) {
+      // Buscar el usuario referidor por RunnerUID
+      const referidorFound = await this.prisma.sec_users.findFirst({
+        where: { RunnerUID: createSecUserDto.RunnerUIDRef },
+        select: {
+          login: true,
+          WalletPuntos: true,
+        },
+      });
+
+      if (referidorFound) {
+        referidor = referidorFound;
+        finalRunnerUIDRef = createSecUserDto.RunnerUIDRef;
+      } else {
+        // Si no se encuentra, generar uno automático
+        finalRunnerUIDRef = this.generateRunnerUIDRef();
+      }
+    } else {
+      // Si no viene RunnerUIDRef, generar uno automático
+      finalRunnerUIDRef = this.generateRunnerUIDRef();
+    }
     
     // Generar RunnerUID con formato Z2R...
     const runnerUID = this.generateRunnerUID();
@@ -147,6 +170,8 @@ export class SecUsersService {
     
     // Valores para pre-registro
     const puntosIniciales = 10000;
+    const puntosNuevoUsuario = 1000; // Puntos para el nuevo usuario que se registra
+    const puntosReferidor = 500; // Puntos para el referidor
     const suscripcionInicial = 399.00;
     
     try {
@@ -178,7 +203,7 @@ export class SecUsersService {
           EmergenciaCelular: createSecUserDto.EmergenciaCelular,
           EmergenciaParentesco: createSecUserDto.EmergenciaParentesco,
           equipoID: createSecUserDto.equipoID,
-          RunnerUIDRef: generatedRunnerUIDRef,
+          RunnerUIDRef: finalRunnerUIDRef,
           active: createSecUserDto.active,
           activation_code: createSecUserDto.activation_code,
           priv_admin: createSecUserDto.priv_admin,
@@ -187,8 +212,8 @@ export class SecUsersService {
           // NO agregar puntos en Z2 para pre-registro
           Z2TotalHistorico: null,
           Z2Recibidas30d: null,
-          // Solo WalletPuntosI con 10000 puntos, WalletPuntos queda null
-          WalletPuntos: null,
+          // WalletPuntosI con 10000 puntos, WalletPuntos con 1000 si hay referidor
+          WalletPuntos: referidor ? puntosNuevoUsuario : null,
           WalletPuntosI: puntosIniciales,
           WalletSaldoMXN: createSecUserDto.WalletSaldoMXN ?? 0.00,
           GananciasAcumuladasMXN: createSecUserDto.GananciasAcumuladasMXN ?? 0.00,
@@ -214,6 +239,18 @@ export class SecUsersService {
         const newUser = await tx.sec_users.create({
           data: userData,
         });
+
+        // Si hay referidor, asignar 500 puntos en WalletPuntos al referidor
+        if (referidor) {
+          const nuevosPuntosReferidor = (referidor.WalletPuntos || 0) + puntosReferidor;
+          
+          await tx.sec_users.update({
+            where: { login: referidor.login },
+            data: {
+              WalletPuntos: nuevosPuntosReferidor,
+            },
+          });
+        }
 
         return newUser;
       });

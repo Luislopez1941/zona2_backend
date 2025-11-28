@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, promociones_TipoPromo, promociones_Estatus } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -240,6 +240,70 @@ async function main() {
   console.log('📋 Eventos creados en:');
   eventos.forEach((evento, index) => {
     console.log(`   ${index + 1}. ${evento.Titulo} - ${evento.Ciudad}, ${evento.Estado}`);
+  });
+
+  // Crear promociones
+  console.log('\n🎁 Creando promociones...');
+  
+  const promocionesExistentes = await prisma.promociones.count();
+  if (promocionesExistentes > 0) {
+    console.log(`⚠️  Ya existen ${promocionesExistentes} promociones en la base de datos.`);
+    return;
+  }
+
+  const promociones = [
+    {
+      OrgID: organizador.OrgID,
+      Titulo: '20% OFF en tu primera compra',
+      Subtitulo: 'Usa el código BIENVENIDO20 y obtén un 20% de descuento en tu primera compra. Válido solo para nuevos usuarios.',
+      Precio: 0.00,
+      Moneda: 'MXN',
+      MaxPuntosZ2: 5000,
+      DescuentoImporte: 20.00,
+      TipoPromo: promociones_TipoPromo.DescuentoZ2,
+      FechaInicio: new Date('2024-01-01'),
+      FechaFin: new Date('2025-12-31'),
+      Estatus: promociones_Estatus.Activa,
+    },
+    {
+      OrgID: organizador.OrgID,
+      Titulo: 'Doble puntos este mes',
+      Subtitulo: 'Gana el doble de puntos en todas tus actividades durante este mes. ¡Aprovecha y acumula más puntos!',
+      Precio: 0.00,
+      Moneda: 'MXN',
+      MaxPuntosZ2: 10000,
+      DescuentoImporte: 0.00,
+      TipoPromo: promociones_TipoPromo.DescuentoMixto,
+      FechaInicio: new Date('2024-12-01'),
+      FechaFin: new Date('2024-12-31'),
+      Estatus: promociones_Estatus.Activa,
+    },
+    {
+      OrgID: organizador.OrgID,
+      Titulo: 'Regalo por referir amigos',
+      Subtitulo: 'Obtén 500 puntos por cada amigo que invites a la plataforma. ¡Comparte y gana!',
+      Precio: 0.00,
+      Moneda: 'MXN',
+      MaxPuntosZ2: 500,
+      DescuentoImporte: 0.00,
+      TipoPromo: promociones_TipoPromo.ProductoGratis,
+      FechaInicio: new Date('2024-01-01'),
+      FechaFin: new Date('2025-12-31'),
+      Estatus: promociones_Estatus.Activa,
+    },
+  ];
+
+  // Insertar promociones
+  for (const promocion of promociones) {
+    await prisma.promociones.create({
+      data: promocion,
+    });
+  }
+
+  console.log(`✅ ${promociones.length} promociones creadas exitosamente.`);
+  console.log('🎁 Promociones creadas:');
+  promociones.forEach((promocion, index) => {
+    console.log(`   ${index + 1}. ${promocion.Titulo}`);
   });
 }
 
