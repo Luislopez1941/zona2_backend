@@ -12,6 +12,19 @@ CREATE TABLE `actividades` (
     `Ciudad` VARCHAR(20) NOT NULL,
     `Pais` VARCHAR(20) NOT NULL,
     `enlace` VARCHAR(255) NOT NULL,
+    `fecha_inicio` DATETIME(0) NULL,
+    `fecha_fin` DATETIME(0) NULL,
+    `duracion_segundos` INTEGER NULL,
+    `duracion_formateada` VARCHAR(10) NULL,
+    `distancia` DECIMAL(6, 2) NULL,
+    `ritmo` VARCHAR(10) NULL,
+    `frecuencia_promedio` INTEGER NULL,
+    `frecuencia_maxima` INTEGER NULL,
+    `cadencia` INTEGER NULL,
+    `calorias` INTEGER NULL,
+    `zona_activa` INTEGER NULL,
+    `tipo_actividad` VARCHAR(20) NULL,
+    `fecha_registro` DATETIME(0) NULL,
 
     PRIMARY KEY (`actID`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -89,7 +102,7 @@ CREATE TABLE `zonas` (
 
 -- CreateTable
 CREATE TABLE `establecimientos` (
-    `EstablecimientoID` INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+    `OrgID` INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
     `NombreComercial` VARCHAR(255) NOT NULL,
     `Giro` VARCHAR(150) NULL,
     `Descripcion` VARCHAR(255) NULL,
@@ -107,10 +120,10 @@ CREATE TABLE `establecimientos` (
     `PuntosEquivalencia` INTEGER UNSIGNED NULL,
     `EquivalenciaDescuentoImporte` DECIMAL(10, 2) NULL,
     `Estatus` ENUM('pendiente', 'activo', 'suspendido', 'baja') NOT NULL DEFAULT 'pendiente',
-    `FechaAlta` TIMESTAMP(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
-    `FechaActualiza` TIMESTAMP(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `FechaAlta` TIMESTAMP(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `FechaActualiza` TIMESTAMP(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
 
-    PRIMARY KEY (`EstablecimientoID`)
+    PRIMARY KEY (`OrgID`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
@@ -388,3 +401,102 @@ CREATE TABLE `promociones` (
 
     PRIMARY KEY (`PromoID`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `actividad_ruta` (
+    `ruta_id` INTEGER NOT NULL AUTO_INCREMENT,
+    `actividad_id` INTEGER NOT NULL,
+    `punto_numero` INTEGER NULL,
+    `latitud` DECIMAL(10, 6) NULL,
+    `longitud` DECIMAL(10, 6) NULL,
+
+    INDEX `actividad_id`(`actividad_id`),
+    PRIMARY KEY (`ruta_id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `actividad_ubicacion` (
+    `ubicacion_id` INTEGER NOT NULL AUTO_INCREMENT,
+    `actividad_id` INTEGER NOT NULL,
+    `ciudad` VARCHAR(100) NULL,
+    `inicio_lat` DECIMAL(10, 6) NULL,
+    `inicio_lon` DECIMAL(10, 6) NULL,
+    `fin_lat` DECIMAL(10, 6) NULL,
+    `fin_lon` DECIMAL(10, 6) NULL,
+
+    INDEX `actividad_id`(`actividad_id`),
+    PRIMARY KEY (`ubicacion_id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `actividad_zonas` (
+    `zona_id` INTEGER NOT NULL AUTO_INCREMENT,
+    `actividad_id` INTEGER NOT NULL,
+    `zona_numero` INTEGER NULL,
+    `rango_texto` VARCHAR(20) NULL,
+    `fue_activa` BOOLEAN NULL,
+
+    INDEX `actividad_id`(`actividad_id`),
+    PRIMARY KEY (`zona_id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `pacers` (
+    `PacerID` INTEGER NOT NULL AUTO_INCREMENT,
+    `RunnerUID` CHAR(36) NOT NULL,
+    `NombreCompleto` VARCHAR(255) NOT NULL,
+    `AliasPacer` VARCHAR(100) NULL,
+    `Biografia` TEXT NULL,
+    `Idiomas` VARCHAR(255) NULL,
+    `RitmoMin` VARCHAR(20) NULL,
+    `DistanciasDominadas` VARCHAR(255) NULL,
+    `Certificaciones` VARCHAR(255) NULL,
+    `CiudadBase` VARCHAR(100) NULL,
+    `EstadoBase` VARCHAR(100) NULL,
+    `PaisBase` VARCHAR(100) NULL DEFAULT 'México',
+    `DisponibilidadHoraria` VARCHAR(255) NULL,
+    `PickUpHotel` BOOLEAN NULL DEFAULT false,
+    `FotoPerfilURL` VARCHAR(500) NULL,
+    `RedesSociales` VARCHAR(500) NULL,
+    `CalificacionPromedio` DECIMAL(3, 2) NULL DEFAULT 0.00,
+    `TotalReviews` INTEGER NULL DEFAULT 0,
+    `TotalExperienciasRealizadas` INTEGER NULL DEFAULT 0,
+    `Tarifabase` DECIMAL(10, 2) NULL,
+    `PacerActivo` BOOLEAN NULL DEFAULT true,
+    `FechaRegistro` TIMESTAMP(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `FechaActualizacion` TIMESTAMP(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
+
+    PRIMARY KEY (`PacerID`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `rutas` (
+    `RutaID` INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+    `RunnerUID` CHAR(36) NOT NULL,
+    `NombreRuta` VARCHAR(150) NOT NULL,
+    `Descripcion` TEXT NULL,
+    `Disciplina` VARCHAR(50) NULL DEFAULT 'Carrera',
+    `DistanciaKM` VARCHAR(50) NOT NULL,
+    `ElevacionM` INTEGER NULL DEFAULT 0,
+    `Dificultad` ENUM('Fácil', 'Moderada', 'Difícil', 'Experto') NULL DEFAULT 'Fácil',
+    `DuracionEstimadoMin` INTEGER NULL,
+    `Ciudad` VARCHAR(50) NOT NULL,
+    `Estado` VARCHAR(50) NULL,
+    `Pais` VARCHAR(50) NULL,
+    `GoogleMaps` VARCHAR(255) NULL,
+    `GPXfile` VARCHAR(255) NULL,
+    `Estatus` ENUM('Publica', 'Privada', 'Oculta') NULL DEFAULT 'Publica',
+    `FechaCreacion` DATETIME(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `FechaActualizacion` TIMESTAMP(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+
+    PRIMARY KEY (`RutaID`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- AddForeignKey
+ALTER TABLE `actividad_ruta` ADD CONSTRAINT `actividad_ruta_ibfk_1` FOREIGN KEY (`actividad_id`) REFERENCES `actividades`(`actID`) ON DELETE CASCADE ON UPDATE RESTRICT;
+
+-- AddForeignKey
+ALTER TABLE `actividad_ubicacion` ADD CONSTRAINT `actividad_ubicacion_ibfk_1` FOREIGN KEY (`actividad_id`) REFERENCES `actividades`(`actID`) ON DELETE CASCADE ON UPDATE RESTRICT;
+
+-- AddForeignKey
+ALTER TABLE `actividad_zonas` ADD CONSTRAINT `actividad_zonas_ibfk_1` FOREIGN KEY (`actividad_id`) REFERENCES `actividades`(`actID`) ON DELETE CASCADE ON UPDATE RESTRICT;

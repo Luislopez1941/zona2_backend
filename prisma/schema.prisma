@@ -8,18 +8,34 @@ datasource db {
 }
 
 model actividades {
-  actID          Int      @id @default(autoincrement())
-  RunnerUID      String   @db.VarChar(36)
-  plataforma     String   @db.Char(1)
-  titulo         String   @db.VarChar(150)
-  fechaActividad DateTime @db.DateTime(0)
-  DistanciaKM    Decimal  @db.Decimal(6, 2)
-  RitmoMinKm     String   @db.VarChar(10)
-  Duracion       String   @db.VarChar(10)
-  Origen         String   @db.VarChar(20)
-  Ciudad         String   @db.VarChar(20)
-  Pais           String   @db.VarChar(20)
-  enlace         String   @db.VarChar(255)
+  actID               Int                   @id @default(autoincrement())
+  RunnerUID           String                @db.VarChar(36)
+  plataforma          String                @db.Char(1)
+  titulo              String                @db.VarChar(150)
+  fechaActividad      DateTime              @db.DateTime(0)
+  DistanciaKM         Decimal               @db.Decimal(6, 2)
+  RitmoMinKm          String                @db.VarChar(10)
+  Duracion            String                @db.VarChar(10)
+  Origen              String                @db.VarChar(20)
+  Ciudad              String                @db.VarChar(20)
+  Pais                String                @db.VarChar(20)
+  enlace              String                @db.VarChar(255)
+  fecha_inicio        DateTime?             @db.DateTime(0)
+  fecha_fin           DateTime?             @db.DateTime(0)
+  duracion_segundos   Int?
+  duracion_formateada String?               @db.VarChar(10)
+  distancia           Decimal?              @db.Decimal(6, 2)
+  ritmo               String?               @db.VarChar(10)
+  frecuencia_promedio Int?
+  frecuencia_maxima   Int?
+  cadencia            Int?
+  calorias            Int?
+  zona_activa         Int?
+  tipo_actividad      String?               @db.VarChar(20)
+  fecha_registro      DateTime?             @db.DateTime(0)
+  actividad_ruta      actividad_ruta[]
+  actividad_ubicacion actividad_ubicacion[]
+  actividad_zonas     actividad_zonas[]
 
   @@map("actividades")
 }
@@ -95,7 +111,7 @@ model zonas {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model establecimientos {
-  EstablecimientoID            Int                      @id @default(autoincrement()) @db.UnsignedInt
+  OrgID                        Int                      @id @default(autoincrement()) @db.UnsignedInt
   NombreComercial              String                   @db.VarChar(255)
   Giro                         String?                  @db.VarChar(150)
   Descripcion                  String?                  @db.VarChar(255)
@@ -113,8 +129,8 @@ model establecimientos {
   PuntosEquivalencia           Int?                     @db.UnsignedInt
   EquivalenciaDescuentoImporte Decimal?                 @db.Decimal(10, 2)
   Estatus                      establecimientos_Estatus @default(pendiente)
-  FechaAlta                    DateTime                 @default(now()) @db.Timestamp(0)
-  FechaActualiza               DateTime                 @default(now()) @db.Timestamp(0)
+  FechaAlta                    DateTime?                @default(now()) @db.Timestamp(0)
+  FechaActualiza               DateTime?                @default(now()) @db.Timestamp(0)
 
   @@map("establecimientos")
 }
@@ -361,6 +377,89 @@ model promociones {
   Estatus          promociones_Estatus   @default(Activa)
 }
 
+model actividad_ruta {
+  ruta_id      Int         @id @default(autoincrement())
+  actividad_id Int
+  punto_numero Int?
+  latitud      Decimal?    @db.Decimal(10, 6)
+  longitud     Decimal?    @db.Decimal(10, 6)
+  actividades  actividades @relation(fields: [actividad_id], references: [actID], onDelete: Cascade, onUpdate: Restrict, map: "actividad_ruta_ibfk_1")
+
+  @@index([actividad_id], map: "actividad_id")
+}
+
+model actividad_ubicacion {
+  ubicacion_id Int         @id @default(autoincrement())
+  actividad_id Int
+  ciudad       String?     @db.VarChar(100)
+  inicio_lat   Decimal?    @db.Decimal(10, 6)
+  inicio_lon   Decimal?    @db.Decimal(10, 6)
+  fin_lat      Decimal?    @db.Decimal(10, 6)
+  fin_lon      Decimal?    @db.Decimal(10, 6)
+  actividades  actividades @relation(fields: [actividad_id], references: [actID], onDelete: Cascade, onUpdate: Restrict, map: "actividad_ubicacion_ibfk_1")
+
+  @@index([actividad_id], map: "actividad_id")
+}
+
+model actividad_zonas {
+  zona_id      Int         @id @default(autoincrement())
+  actividad_id Int
+  zona_numero  Int?
+  rango_texto  String?     @db.VarChar(20)
+  fue_activa   Boolean?
+  actividades  actividades @relation(fields: [actividad_id], references: [actID], onDelete: Cascade, onUpdate: Restrict, map: "actividad_zonas_ibfk_1")
+
+  @@index([actividad_id], map: "actividad_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model pacers {
+  PacerID                     Int      @id @default(autoincrement())
+  RunnerUID                   String   @db.Char(36)
+  NombreCompleto              String   @db.VarChar(255)
+  AliasPacer                  String?  @db.VarChar(100)
+  Biografia                   String?  @db.Text
+  Idiomas                     String?  @db.VarChar(255)
+  RitmoMin                    String?  @db.VarChar(20)
+  DistanciasDominadas         String?  @db.VarChar(255)
+  Certificaciones             String?  @db.VarChar(255)
+  CiudadBase                  String?  @db.VarChar(100)
+  EstadoBase                  String?  @db.VarChar(100)
+  PaisBase                    String?  @default("México") @db.VarChar(100)
+  DisponibilidadHoraria       String?  @db.VarChar(255)
+  PickUpHotel                 Boolean? @default(false)
+  FotoPerfilURL               String?  @db.VarChar(500)
+  RedesSociales               String?  @db.VarChar(500)
+  CalificacionPromedio        Decimal? @default(0.00) @db.Decimal(3, 2)
+  TotalReviews                Int?     @default(0)
+  TotalExperienciasRealizadas Int?     @default(0)
+  Tarifabase                  Decimal? @db.Decimal(10, 2)
+  PacerActivo                 Boolean? @default(true)
+  FechaRegistro               DateTime @default(now()) @db.Timestamp(0)
+  FechaActualizacion          DateTime @default(now()) @db.Timestamp(0)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model rutas {
+  RutaID              Int               @id @default(autoincrement()) @db.UnsignedInt
+  RunnerUID           String            @db.Char(36)
+  NombreRuta          String            @db.VarChar(150)
+  Descripcion         String?           @db.Text
+  Disciplina          String?           @default("Carrera") @db.VarChar(50)
+  DistanciaKM         String            @db.VarChar(50)
+  ElevacionM          Int?              @default(0)
+  Dificultad          rutas_Dificultad? @default(F_cil)
+  DuracionEstimadoMin Int?
+  Ciudad              String            @db.VarChar(50)
+  Estado              String?           @db.VarChar(50)
+  Pais                String?           @db.VarChar(50)
+  GoogleMaps          String?           @db.VarChar(255)
+  GPXfile             String?           @db.VarChar(255)
+  Estatus             rutas_Estatus?    @default(Publica)
+  FechaCreacion       DateTime?         @default(now()) @db.DateTime(0)
+  FechaActualizacion  DateTime?         @default(now()) @db.Timestamp(0)
+}
+
 enum establecimientos_Estatus {
   pendiente
   activo
@@ -476,4 +575,17 @@ enum inscripciones_EstatusInscripcion {
   Confirmado
   Cancelado
   NoPresentado
+}
+
+enum rutas_Dificultad {
+  F_cil    @map("Fácil")
+  Moderada
+  Dif_cil  @map("Difícil")
+  Experto
+}
+
+enum rutas_Estatus {
+  Publica
+  Privada
+  Oculta
 }

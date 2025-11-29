@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateActividadeDto } from './dto/create-actividade.dto';
 import { UpdateActividadeDto } from './dto/update-actividade.dto';
-import { subscriptions_Status } from '@prisma/client';
+import { subscriptions_Status, actividad_ruta, actividad_ubicacion, actividad_zonas } from '@prisma/client';
 
 @Injectable()
 export class ActividadesService {
@@ -126,7 +126,7 @@ export class ActividadesService {
       });
 
       // Crear puntos de ruta si se proporcionan
-      const rutasCreadas = [];
+      const rutasCreadas: actividad_ruta[] = [];
       if (createActividadeDto.ruta && createActividadeDto.ruta.length > 0) {
         for (const punto of createActividadeDto.ruta) {
           const ruta = await tx.actividad_ruta.create({
@@ -142,7 +142,7 @@ export class ActividadesService {
       }
 
       // Crear ubicación si se proporciona
-      let ubicacionCreada = null;
+      let ubicacionCreada: actividad_ubicacion | null = null;
       if (createActividadeDto.ubicacion) {
         ubicacionCreada = await tx.actividad_ubicacion.create({
           data: {
@@ -157,7 +157,7 @@ export class ActividadesService {
       }
 
       // Crear zonas si se proporcionan
-      const zonasCreadas = [];
+      const zonasCreadas: actividad_zonas[] = [];
       if (createActividadeDto.zonas && createActividadeDto.zonas.length > 0) {
         for (const zona of createActividadeDto.zonas) {
           const zonaCreada = await tx.actividad_zonas.create({
