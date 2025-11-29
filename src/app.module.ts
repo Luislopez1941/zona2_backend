@@ -18,10 +18,12 @@ import { PecersModule } from './apis/pecers/pecers.module';
 import { FollowersModule } from './apis/followers/followers.module';
 import { NotificacionesModule } from './apis/notificaciones/notificaciones.module';
 import { ZonasActividadesModule } from './apis/zonas_actividades/zonas_actividades.module';
+import { ActividadZonasModule } from './apis/actividad_zonas/actividad_zonas.module';
+import { ZonasActividadesModule } from './apis/zonas_actividades/zonas_actividades.module';
 
 
 @Module({
-  imports: [PrismaModule, SmsModule, SecUsersModule, ActividadesModule, ZonasModule, EstablecimientosModule, LoginModule, EventosModule, PromocionesModule, EstadosMexicoModule, PaisesModule, CiudadesMexicoModule, EquiposModule, PecersModule, FollowersModule, NotificacionesModule, ZonasActividadesModule],
+  imports: [PrismaModule, SmsModule, SecUsersModule, ActividadesModule, ZonasModule, EstablecimientosModule, LoginModule, EventosModule, PromocionesModule, EstadosMexicoModule, PaisesModule, CiudadesMexicoModule, EquiposModule, PecersModule, FollowersModule, NotificacionesModule, ZonasActividadesModule, ActividadZonasModule],
   controllers: [AppController],
   providers: [AppService],
 })

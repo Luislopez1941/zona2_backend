@@ -8,14 +8,15 @@ export class ZonasActividadesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createZonasActividadeDto: CreateZonasActividadeDto) {
+    const runnerUID = createZonasActividadeDto.RunnerUID;
     // Verificar que el usuario que da las zonas existe
     const usuarioDa = await this.prisma.sec_users.findFirst({
-      where: { RunnerUID: createZonasActividadeDto.RunnerUIDRef },
+      where: { RunnerUID: runnerUID },
     });
 
     if (!usuarioDa) {
       throw new NotFoundException(
-        `Usuario con RunnerUID ${createZonasActividadeDto.RunnerUIDRef} no encontrado`,
+        `Usuario con RunnerUID ${runnerUID} no encontrado`,
       );
     }
 
@@ -46,7 +47,7 @@ export class ZonasActividadesService {
     // Verificar que no se haya dado zonas a esta actividad antes (restricción única)
     const zonaExistente = await this.prisma.zonas_actividades.findFirst({
       where: {
-        RunnerUIDRef: createZonasActividadeDto.RunnerUIDRef,
+        RunnerUID: runnerUID,
         actID: createZonasActividadeDto.actID,
       },
     });
@@ -62,11 +63,9 @@ export class ZonasActividadesService {
       // 1. Crear registro en zonas_actividades
       const zonaActividad = await tx.zonas_actividades.create({
         data: {
-          RunnerUIDRef: createZonasActividadeDto.RunnerUIDRef,
+          RunnerUID: runnerUID,
           actID: createZonasActividadeDto.actID,
           puntos: createZonasActividadeDto.puntos,
-          motivo: 'R', // R de Runner
-          origen: '3', // Origen 3
           fecha: new Date(),
         },
       });
@@ -75,7 +74,7 @@ export class ZonasActividadesService {
       const zona = await tx.zonas.create({
         data: {
           RunnerUID: runnerUIDRecibe, // Usuario que recibe las zonas
-          RunnerUIDRef: createZonasActividadeDto.RunnerUIDRef, // Usuario que da las zonas
+          RunnerUIDRef: runnerUID, // Usuario que da las zonas
           puntos: createZonasActividadeDto.puntos,
           motivo: 'R', // R de Runner
           origen: '3', // Origen 3
@@ -98,10 +97,10 @@ export class ZonasActividadesService {
   }
 
   // Verificar si un usuario ya dio zonas a una actividad
-  async hasGivenZonas(runnerUIDRef: string, actID: number) {
+  async hasGivenZonas(runnerUID: string, actID: number) {
     const zona = await this.prisma.zonas_actividades.findFirst({
       where: {
-        RunnerUIDRef: runnerUIDRef,
+        RunnerUID: runnerUID,
         actID: actID,
       },
     });
@@ -113,10 +112,10 @@ export class ZonasActividadesService {
   }
 
   // Obtener todas las zonas que un usuario ha dado
-  async getZonasGivenByUser(runnerUIDRef: string) {
+  async getZonasGivenByUser(runnerUID: string) {
     const zonas = await this.prisma.zonas_actividades.findMany({
       where: {
-        RunnerUIDRef: runnerUIDRef,
+        RunnerUID: runnerUID,
       },
       include: {
         actividades: {

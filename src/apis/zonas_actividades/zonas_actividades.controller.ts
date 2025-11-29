@@ -14,18 +14,18 @@ export class ZonasActividadesController {
   }
 
   // Verificar si un usuario ya dio zonas a una actividad
-  @Get('has-given/:runnerUIDRef/:actID')
+  @Get('has-given/:runnerUID/:actID')
   hasGivenZonas(
-    @Param('runnerUIDRef') runnerUIDRef: string,
+    @Param('runnerUID') runnerUID: string,
     @Param('actID') actID: string,
   ) {
-    return this.zonasActividadesService.hasGivenZonas(runnerUIDRef, +actID);
+    return this.zonasActividadesService.hasGivenZonas(runnerUID, +actID);
   }
 
   // Obtener todas las zonas que un usuario ha dado
-  @Get('given-by-user/:runnerUIDRef')
-  getZonasGivenByUser(@Param('runnerUIDRef') runnerUIDRef: string) {
-    return this.zonasActividadesService.getZonasGivenByUser(runnerUIDRef);
+  @Get('given-by-user/:runnerUID')
+  getZonasGivenByUser(@Param('runnerUID') runnerUID: string) {
+    return this.zonasActividadesService.getZonasGivenByUser(runnerUID);
   }
 
   // Obtener todas las zonas recibidas por una actividad

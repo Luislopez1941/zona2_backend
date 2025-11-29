@@ -128,7 +128,7 @@ model Followers {
 model zonas {
   zonaID       Int      @id @default(autoincrement())
   RunnerUID    String   @db.VarChar(36)
-  RunnerUIDRef String   @db.VarChar(36)
+  RunnerUIDRef String?   @db.VarChar(36)
   puntos       Int
   motivo       String   @db.Char(2)
   origen       String   @db.Char(2)
@@ -440,20 +440,19 @@ model actividad_zonas {
   @@index([actividad_id], map: "actividad_id")
 }
 
-// Tabla para registrar las zonas que los usuarios dan a las actividades/publicaciones
+// Tabla para registrar cuando un usuario da "zonas" (like) a una actividad/publicación
+// Funciona como un sistema de likes: un usuario solo puede dar zonas una vez por actividad
 model zonas_actividades {
   id            Int       @id @default(autoincrement())
-  RunnerUIDRef  String    @db.VarChar(36) // Usuario que da las zonas
-  actID         Int       // Actividad a la que se le dan las zonas
-  puntos        Int       // Cantidad de puntos otorgados
-  motivo        String    @default("R") @db.Char(2) // R de Runner
-  origen        String    @default("3") @db.Char(2) // Origen 3
-  fecha         DateTime  @default(now()) @db.DateTime(0)
+  RunnerUID     String    @db.VarChar(36) // Usuario que da las zonas (like)
+  actID         Int       // Actividad/publicación a la que se le dan las zonas
+  puntos        Int       @default(100) // Puntos otorgados (puede ser fijo o variable)
+  fecha         DateTime  @default(now()) @db.DateTime(0) // Fecha en que se dio el like
   actividades   actividades @relation(fields: [actID], references: [actID], onDelete: Cascade, onUpdate: Restrict)
 
-  @@unique([RunnerUIDRef, actID]) // Evita que el mismo usuario dé zonas a la misma actividad más de una vez
-  @@index([RunnerUIDRef])
-  @@index([actID])
+  @@unique([RunnerUID, actID]) // Restricción única: un usuario solo puede dar zonas una vez por actividad
+  @@index([RunnerUID]) // Índice para búsquedas rápidas por usuario
+  @@index([actID]) // Índice para búsquedas rápidas por actividad
   @@map("zonas_actividades")
 }
 

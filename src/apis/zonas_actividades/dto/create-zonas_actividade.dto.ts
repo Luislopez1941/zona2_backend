@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsNumber, Min } from 'class-validator';
+import { IsNumber, Min, IsNotEmpty, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
 
@@ -7,7 +7,7 @@ export class CreateZonasActividadeDto {
   @ApiProperty({ description: 'RunnerUID del usuario que da las zonas' })
   @IsString()
   @IsNotEmpty()
-  RunnerUIDRef: string; // Usuario que da las zonas
+  RunnerUID: string; // Usuario que da las zonas
 
   @Expose()
   @ApiProperty({ description: 'ID de la actividad a la que se le dan las zonas' })
