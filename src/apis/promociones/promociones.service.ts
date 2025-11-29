@@ -34,7 +34,7 @@ export class PromocionesService {
   }
 
   /**
-   * Devuelve las 10 primeras promociones activas
+   * Devuelve las 10 primeras promociones activas con información del organizador
    */
   async findFirst10() {
     const promociones = await this.prisma.promociones.findMany({
@@ -47,18 +47,61 @@ export class PromocionesService {
       },
     });
 
+    // Obtener información de los organizadores
+    const promocionesConOrganizador = await Promise.all(
+      promociones.map(async (promocion) => {
+        const organizador = await this.prisma.organizadores.findUnique({
+          where: { OrgID: promocion.OrgID },
+          select: {
+            OrgID: true,
+            NombreComercial: true,
+            RazonSocial: true,
+            ContactoNombre: true,
+            ContactoEmail: true,
+            ContactoTelefono: true,
+            Ciudad: true,
+            Estado: true,
+            Pais: true,
+          },
+        });
+
+        return {
+          ...promocion,
+          organizador,
+        };
+      }),
+    );
+
     return {
       message: 'Promociones obtenidas exitosamente',
       status: 'success',
-      total: promociones.length,
-      promociones,
+      total: promocionesConOrganizador.length,
+      promociones: promocionesConOrganizador,
     };
   }
 
   /**
-   * Devuelve todas las promociones con paginación opcional
+   * Devuelve todas las promociones con paginación opcional e información del organizador
    */
   async findAll(page?: number, limit?: number) {
+    // Función helper para obtener organizador
+    const getOrganizador = async (orgID: number) => {
+      return await this.prisma.organizadores.findUnique({
+        where: { OrgID: orgID },
+        select: {
+          OrgID: true,
+          NombreComercial: true,
+          RazonSocial: true,
+          ContactoNombre: true,
+          ContactoEmail: true,
+          ContactoTelefono: true,
+          Ciudad: true,
+          Estado: true,
+          Pais: true,
+        },
+      });
+    };
+
     // Si no se pasan parámetros, traer todas las promociones
     if (!page && !limit) {
       const promociones = await this.prisma.promociones.findMany({
@@ -67,11 +110,22 @@ export class PromocionesService {
         },
       });
 
+      // Obtener información de los organizadores
+      const promocionesConOrganizador = await Promise.all(
+        promociones.map(async (promocion) => {
+          const organizador = await getOrganizador(promocion.OrgID);
+          return {
+            ...promocion,
+            organizador,
+          };
+        }),
+      );
+
       return {
         message: 'Promociones obtenidas exitosamente',
         status: 'success',
-        total: promociones.length,
-        promociones,
+        total: promocionesConOrganizador.length,
+        promociones: promocionesConOrganizador,
       };
     }
 
@@ -91,6 +145,17 @@ export class PromocionesService {
       this.prisma.promociones.count(),
     ]);
 
+    // Obtener información de los organizadores
+    const promocionesConOrganizador = await Promise.all(
+      promociones.map(async (promocion) => {
+        const organizador = await getOrganizador(promocion.OrgID);
+        return {
+          ...promocion,
+          organizador,
+        };
+      }),
+    );
+
     const totalPages = Math.ceil(total / limitNumber);
 
     return {
@@ -104,7 +169,7 @@ export class PromocionesService {
         hasNextPage: pageNumber < totalPages,
         hasPrevPage: pageNumber > 1,
       },
-      promociones,
+      promociones: promocionesConOrganizador,
     };
   }
 
@@ -117,10 +182,29 @@ export class PromocionesService {
       throw new NotFoundException(`Promoción con ID ${id} no encontrada`);
     }
 
+    // Obtener información del organizador
+    const organizador = await this.prisma.organizadores.findUnique({
+      where: { OrgID: promocion.OrgID },
+      select: {
+        OrgID: true,
+        NombreComercial: true,
+        RazonSocial: true,
+        ContactoNombre: true,
+        ContactoEmail: true,
+        ContactoTelefono: true,
+        Ciudad: true,
+        Estado: true,
+        Pais: true,
+      },
+    });
+
     return {
       message: 'Promoción obtenida exitosamente',
       status: 'success',
-      promocion,
+      promocion: {
+        ...promocion,
+        organizador,
+      },
     };
   }
 

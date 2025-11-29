@@ -8,6 +8,7 @@ import { ForgetPasswordDto } from './dto/forget-password.dto';
 import { VerifyRecoveryCodeDto } from './dto/verify-recovery-code.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { CreateOrganizadorDto } from './dto/create-organizador.dto';
+import { UpdatePeacerDto } from './dto/update-peacer.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 // Extender el tipo Request para incluir el usuario del JWT
@@ -16,15 +17,20 @@ interface RequestWithUser extends Request {
     login: string;
     [key: string]: any;
   };
-}
+  }
 
-@Controller('sec-users')
-export class SecUsersController {
+  @Controller('sec-users')
+  export class SecUsersController {
   constructor(private readonly secUsersService: SecUsersService) {}
 
   @Post('pre-register')
   preRegister(@Body() createSecUserDto: CreateSecUserDto) {
     return this.secUsersService.preRegister(createSecUserDto);
+  }
+
+  @Post('update-peacer')
+  updatePeacer(@Body() updatePeacerDto: UpdatePeacerDto) {
+    return this.secUsersService.updatePeacer(updatePeacerDto);
   }
 
   @Post('organizers-register')

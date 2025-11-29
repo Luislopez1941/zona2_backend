@@ -10,10 +10,15 @@ import { EstablecimientosModule } from './apis/establecimientos/establecimientos
 import { LoginModule } from './apis/auth/login/login.module';
 import { EventosModule } from './apis/eventos/eventos.module';
 import { PromocionesModule } from './apis/promociones/promociones.module';
+import { EstadosMexicoModule } from './apis/estados_mexico/estados_mexico.module';
+import { PaisesModule } from './apis/paises/paises.module';
+import { CiudadesMexicoModule } from './apis/ciudades_mexico/ciudades_mexico.module';
+import { EquiposModule } from './apis/equipos/equipos.module';
+import { PecersModule } from './apis/pecers/pecers.module';
 
 
 @Module({
-  imports: [PrismaModule, SmsModule, SecUsersModule, ActividadesModule, ZonasModule, EstablecimientosModule, LoginModule, EventosModule, PromocionesModule],
+  imports: [PrismaModule, SmsModule, SecUsersModule, ActividadesModule, ZonasModule, EstablecimientosModule, LoginModule, EventosModule, PromocionesModule, EstadosMexicoModule, PaisesModule, CiudadesMexicoModule, EquiposModule, PecersModule],
   controllers: [AppController],
   providers: [AppService],
 })

@@ -4,6 +4,7 @@ import { SmsService } from '../../common/services/sms.service';
 import { CreateSecUserDto } from './dto/create-sec_user.dto';
 import { UpdateSecUserDto } from './dto/update-sec_user.dto';
 import { CreateOrganizadorDto } from './dto/create-organizador.dto';
+import { UpdatePeacerDto } from './dto/update-peacer.dto';
 import { createHash, randomUUID } from 'crypto';
 import { PrismaClient, Prisma, organizadores_Estatus, establecimientos_Estatus } from '@prisma/client';
 
@@ -1221,6 +1222,108 @@ export class SecUsersService {
         status: 'success',
         user: result.user,
         establecimiento: result.establecimiento,
+      };
+    } catch (error) {
+      // Manejar errores de Prisma
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
+        const field = (error as any).meta?.target as string[] | undefined;
+        throw new ConflictException(
+          `Ya existe un registro con ${field?.join(', ') || 'estos datos'}`,
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Actualiza un usuario Runner a Pacer
+   * Cambia TipoMembresia de 'R' a 'P' y actualiza la suscripción
+   */
+  async updatePeacer(updatePeacerDto: UpdatePeacerDto) {
+    const { RunnerUID, FechaRenovacionMembresia } = updatePeacerDto;
+
+    // Verificar que el usuario existe
+    const usuario = await this.prisma.sec_users.findFirst({
+      where: { RunnerUID },
+    });
+
+    if (!usuario) {
+      throw new NotFoundException(`Usuario con RunnerUID ${RunnerUID} no encontrado`);
+    }
+
+    // Verificar que el usuario es Runner (TipoMembresia = 'R')
+    if (usuario.TipoMembresia !== 'R') {
+      throw new ConflictException(
+        `El usuario con RunnerUID ${RunnerUID} no es un Runner. TipoMembresia actual: ${usuario.TipoMembresia}`,
+      );
+    }
+
+    // Calcular FechaRenovacionMembresia (1 año desde ahora o la fecha proporcionada)
+    const fechaRenovacion = FechaRenovacionMembresia
+      ? new Date(FechaRenovacionMembresia)
+      : new Date();
+    
+    if (!FechaRenovacionMembresia) {
+      fechaRenovacion.setFullYear(fechaRenovacion.getFullYear() + 1);
+    }
+
+    try {
+      // Actualizar usuario y suscripción en una transacción
+      const result = await this.prisma.$transaction(async (tx) => {
+        // 1. Actualizar el usuario a Pacer
+        const updatedUser = await tx.sec_users.update({
+          where: { login: usuario.login },
+          data: {
+            TipoMembresia: 'P', // Cambiar a Pacer
+            FechaRenovacionMembresia: fechaRenovacion,
+          },
+        });
+
+        // 2. Buscar y actualizar la suscripción existente
+        const existingSubscription = await tx.subscriptions.findFirst({
+          where: { RunnerUID },
+          orderBy: { UpdatedAt: 'desc' },
+        });
+
+        let subscriptionUID = existingSubscription?.SubscriptionUID;
+
+        if (existingSubscription) {
+          // Actualizar suscripción existente
+          await tx.subscriptions.update({
+            where: { SubscriptionUID: existingSubscription.SubscriptionUID },
+            data: {
+              PlanCode: 'Pacer',
+              Status: 'Active',
+              StartAt: new Date(),
+            },
+          });
+        } else {
+          // Crear nueva suscripción si no existe
+          subscriptionUID = randomUUID();
+          await tx.subscriptions.create({
+            data: {
+              SubscriptionUID: subscriptionUID,
+              RunnerUID: RunnerUID,
+              PlanCode: 'Pacer',
+              PlanVersion: 1,
+              BillingCycle: 'Yearly',
+              Status: 'Active',
+              StartAt: new Date(),
+            },
+          });
+        }
+
+        return {
+          user: updatedUser,
+          subscriptionUID: subscriptionUID,
+        };
+      });
+
+      return {
+        message: 'Usuario actualizado a Pacer exitosamente',
+        status: 'success',
+        user: result.user,
+        subscriptionUID: result.subscriptionUID,
       };
     } catch (error) {
       // Manejar errores de Prisma

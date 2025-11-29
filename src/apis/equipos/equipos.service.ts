@@ -1,0 +1,157 @@
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
+import { CreateEquipoDto } from './dto/create-equipo.dto';
+import { UpdateEquipoDto } from './dto/update-equipo.dto';
+import { JoinATeamDto } from './dto/join-a-team.dto';
+
+@Injectable()
+export class EquiposService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async create(createEquipoDto: CreateEquipoDto) {
+    const equipo = await this.prisma.equipos.create({
+      data: createEquipoDto,
+    });
+
+    return {
+      message: 'Equipo creado exitosamente',
+      status: 'success',
+      equipo,
+    };
+  }
+
+  async findAll() {
+    const equipos = await this.prisma.equipos.findMany({
+      where: {
+        Activo: true,
+      },
+      orderBy: {
+        NombreEquipo: 'asc',
+      },
+    });
+
+    return {
+      message: 'Equipos obtenidos exitosamente',
+      status: 'success',
+      total: equipos.length,
+      equipos,
+    };
+  }
+
+  async findOne(id: number) {
+    const equipo = await this.prisma.equipos.findUnique({
+      where: { OrgID: id },
+    });
+
+    if (!equipo) {
+      throw new NotFoundException(`Equipo con ID ${id} no encontrado`);
+    }
+
+    return {
+      message: 'Equipo obtenido exitosamente',
+      status: 'success',
+      equipo,
+    };
+  }
+
+  async update(id: number, updateEquipoDto: UpdateEquipoDto) {
+    await this.findOne(id); // Verificar que existe
+
+    const equipo = await this.prisma.equipos.update({
+      where: { OrgID: id },
+      data: updateEquipoDto,
+    });
+
+    return {
+      message: 'Equipo actualizado exitosamente',
+      status: 'success',
+      equipo,
+    };
+  }
+
+  async remove(id: number) {
+    await this.findOne(id); // Verificar que existe
+
+    await this.prisma.equipos.update({
+      where: { OrgID: id },
+      data: { Activo: false },
+    });
+
+    return {
+      message: 'Equipo desactivado exitosamente',
+      status: 'success',
+    };
+  }
+
+  async joinATeam(joinATeamDto: JoinATeamDto) {
+    const { RunnerUID, OrgID } = joinATeamDto;
+
+    // Verificar que el usuario existe
+    const usuario = await this.prisma.sec_users.findFirst({
+      where: { RunnerUID },
+    });
+
+    if (!usuario) {
+      throw new NotFoundException(`Usuario con RunnerUID ${RunnerUID} no encontrado`);
+    }
+
+    // Verificar que el equipo existe y está activo
+    const equipo = await this.prisma.equipos.findUnique({
+      where: { OrgID },
+    });
+
+    if (!equipo) {
+      throw new NotFoundException(`Equipo con ID ${OrgID} no encontrado`);
+    }
+
+    if (!equipo.Activo) {
+      throw new ConflictException(`El equipo con ID ${OrgID} no está activo`);
+    }
+
+    // Verificar si el usuario ya está en un equipo
+    if (usuario.equipoID) {
+      // Si ya está en este equipo, retornar éxito sin cambios
+      if (usuario.equipoID === OrgID.toString()) {
+        return {
+          message: 'El usuario ya está en este equipo',
+          status: 'success',
+        };
+      }
+      // Si está en otro equipo, permitir el cambio
+    }
+
+    // Actualizar el usuario y el equipo en una transacción
+    await this.prisma.$transaction(async (tx) => {
+      // Actualizar el equipoID del usuario (convertir OrgID a string)
+      await tx.sec_users.update({
+        where: { login: usuario.login },
+        data: {
+          equipoID: OrgID.toString(),
+        },
+      });
+
+      // Incrementar AtletasActivos si el usuario no estaba en ningún equipo antes
+      if (!usuario.equipoID) {
+        await tx.equipos.update({
+          where: { OrgID },
+          data: {
+            AtletasActivos: {
+              increment: 1,
+            },
+          },
+        });
+      }
+    });
+
+    // Obtener el equipo actualizado
+    const equipoActualizado = await this.prisma.equipos.findUnique({
+      where: { OrgID },
+    });
+
+    return {
+      message: 'Usuario unido al equipo exitosamente',
+      status: 'success',
+      equipo: equipoActualizado,
+    };
+  }
+}
