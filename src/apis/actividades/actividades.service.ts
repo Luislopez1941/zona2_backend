@@ -101,8 +101,8 @@ export class ActividadesService {
           plataformaNormalizada = 'S';
         } else if (plataformaLower.includes('garmin')) {
           plataformaNormalizada = 'G';
-        } else if (plataformaLower.includes('manual')) {
-          plataformaNormalizada = 'M';
+        } else if (plataformaLower.includes('zona') || plataformaLower.includes('z2')) {
+          plataformaNormalizada = 'Z';
         } else {
           // Tomar solo el primer carácter
           plataformaNormalizada = plataformaNormalizada.charAt(0).toUpperCase();

@@ -58,9 +58,9 @@ export class CreateActividadeDto {
 
   @IsString()
   @IsNotEmpty()
-  @MaxLength(1, { message: 'plataforma debe ser un solo carácter: S (Strava), G (Garmin), M (Manual)' })
-  @Matches(/^[SGM]$/, { message: 'plataforma debe ser S, G o M' })
-  plataforma: string; // 'S' para Strava, 'G' para Garmin, 'M' para Manual
+  @MaxLength(1, { message: 'plataforma debe ser un solo carácter: S (Strava), G (Garmin), Z (Zona)' })
+  @Matches(/^[SGZ]$/, { message: 'plataforma debe ser S, G o Z' })
+  plataforma: string; // 'S' para Strava, 'G' para Garmin, 'Z' para Zona
 
   @IsString()
   @IsNotEmpty()
@@ -85,7 +85,7 @@ export class CreateActividadeDto {
 
   @IsString()
   @IsNotEmpty()
-  Origen: string; // Ejemplo: "Strava", "Garmin", "Manual"
+  Origen: string; // Ejemplo: "Strava", "Garmin", "Zona"
 
   @IsString()
   @IsNotEmpty()
