@@ -16,7 +16,7 @@ model actividades {
   DistanciaKM         Decimal               @db.Decimal(6, 2)
   RitmoMinKm          String                @db.VarChar(10)
   Duracion            String                @db.VarChar(10)
-  Publico             Boolean               @default(false)
+  Public              Boolean               @default(false) @map("Public")
   Origen              String                @db.VarChar(20)
   Ciudad              String                @db.VarChar(20)
   Pais                String                @db.VarChar(20)

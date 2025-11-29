@@ -333,7 +333,7 @@ export class ActividadesService {
         RunnerUID: {
           in: runnerUIDsSeguidos,
         },
-        Publico: true, // Solo actividades públicas
+        Public: true, // Solo actividades públicas
       },
       include: {
         actividad_ruta: {
@@ -457,7 +457,7 @@ export class ActividadesService {
     // Obtener las 20 actividades públicas más recientes
     const actividades = await this.prisma.actividades.findMany({
       where: {
-        Publico: true, // Solo actividades públicas
+        Public: true, // Solo actividades públicas
       },
       include: {
         actividad_ruta: {
@@ -526,7 +526,7 @@ export class ActividadesService {
     // Obtener todas las actividades públicas de todos los usuarios
     const actividades = await this.prisma.actividades.findMany({
       where: {
-        Publico: true, // Solo actividades públicas
+        Public: true, // Solo actividades públicas
       },
       include: {
         actividad_ruta: {
@@ -670,7 +670,7 @@ export class ActividadesService {
       );
     }
 
-    // Determinar el valor de Publico (por defecto true si no se especifica)
+    // Determinar el valor de Public (por defecto true si no se especifica)
     const publico = updatePublicDto.Publico !== undefined ? updatePublicDto.Publico : true;
 
     // Si se proporciona un actID específico
@@ -692,7 +692,7 @@ export class ActividadesService {
       // Actualizar la actividad
       const actividadActualizada = await this.prisma.actividades.update({
         where: { actID: updatePublicDto.actID },
-        data: { Publico: publico },
+        data: { Public: publico },
       });
 
       return {
@@ -724,7 +724,7 @@ export class ActividadesService {
           actID: { in: updatePublicDto.actIDs },
           RunnerUID: runneruid,
         },
-        data: { Publico: publico },
+        data: { Public: publico },
       });
 
       return {
