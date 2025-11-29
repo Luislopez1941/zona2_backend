@@ -11,4 +11,5 @@ export class CiudadesMexicoController {
   findAll(@Query('estado') estado?: string) {
     return this.ciudadesMexicoService.findAll(estado);
   }
+
 }

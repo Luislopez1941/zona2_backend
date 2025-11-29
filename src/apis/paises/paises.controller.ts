@@ -8,5 +8,5 @@ export class PaisesController {
   @Get('get-all')
   findAll() {
     return this.paisesService.findAll();
-  } 
+  }
 }

@@ -1,7 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateActividadeDto } from './dto/create-actividade.dto';
 import { UpdateActividadeDto } from './dto/update-actividade.dto';
+import { UpdatePublicDto } from './dto/update-public.dto';
 import { subscriptions_Status, actividad_ruta, actividad_ubicacion, actividad_zonas } from '@prisma/client';
 
 @Injectable()
@@ -285,6 +286,131 @@ export class ActividadesService {
     };
   }
 
+  async getFeed(runneruid: string, page: number = 1, limit: number = 20) {
+    // Verificar que el usuario existe
+    const usuario = await this.prisma.sec_users.findFirst({
+      where: { RunnerUID: runneruid },
+    });
+
+    if (!usuario) {
+      throw new NotFoundException(
+        `Usuario con RunnerUID ${runneruid} no encontrado`,
+      );
+    }
+
+    // OPTIMIZACIÓN: Usar una consulta SQL raw con JOIN para obtener todo en una sola consulta
+    // Esto es mucho más eficiente que hacer múltiples consultas
+    const seguidos = await this.prisma.$queryRaw<Array<{ followed_runnerUID: string }>>`
+      SELECT DISTINCT followed_runnerUID 
+      FROM followers 
+      WHERE follower_runnerUID = ${runneruid}
+    `;
+
+    // Si no sigue a nadie, retornar array vacío
+    if (seguidos.length === 0) {
+      return {
+        message: 'Feed obtenido exitosamente',
+        status: 'success',
+        total: 0,
+        page,
+        limit,
+        runneruid,
+        message_info: 'No sigues a ningún usuario',
+        actividades: [],
+      };
+    }
+
+    // Extraer los RunnerUIDs de los usuarios seguidos
+    const runnerUIDsSeguidos = seguidos.map((s) => s.followed_runnerUID);
+
+    // Calcular offset para paginación
+    const skip = (page - 1) * limit;
+
+    // OPTIMIZACIÓN: Obtener actividades con JOIN en una sola consulta
+    // Usar IN clause que es optimizado por MySQL con índices
+    const actividades = await this.prisma.actividades.findMany({
+      where: {
+        RunnerUID: {
+          in: runnerUIDsSeguidos,
+        },
+        Publico: true, // Solo actividades públicas
+      },
+      include: {
+        actividad_ruta: {
+          orderBy: {
+            punto_numero: 'asc',
+          },
+        },
+        actividad_ubicacion: true,
+        actividad_zonas: {
+          orderBy: {
+            zona_numero: 'asc',
+          },
+        },
+      },
+      orderBy: {
+        fechaActividad: 'desc', // Más recientes primero
+      },
+      skip, // Paginación
+      take: limit, // Límite de resultados
+    });
+
+    // Obtener el total para la paginación
+    const total = await this.prisma.actividades.count({
+      where: {
+        RunnerUID: {
+          in: runnerUIDsSeguidos,
+        },
+        Publico: true,
+      },
+    });
+
+    // OPTIMIZACIÓN: Obtener información de usuarios en una sola consulta en lugar de Promise.all
+    const runnerUIDsUnicos = [...new Set(actividades.map((a) => a.RunnerUID))];
+    const usuariosMap = new Map();
+
+    if (runnerUIDsUnicos.length > 0) {
+      const usuarios = await this.prisma.sec_users.findMany({
+        where: {
+          RunnerUID: {
+            in: runnerUIDsUnicos,
+          },
+        },
+        select: {
+          RunnerUID: true,
+          name: true,
+          AliasRunner: true,
+          picture: true,
+          Ciudad: true,
+          Estado: true,
+          Pais: true,
+          TipoMembresia: true,
+        },
+      });
+
+      // Crear un mapa para acceso O(1) en lugar de buscar en cada iteración
+      usuarios.forEach((u) => usuariosMap.set(u.RunnerUID, u));
+    }
+
+    // Agregar información del usuario a cada actividad
+    const actividadesConUsuario = actividades.map((actividad) => ({
+      ...actividad,
+      usuario: usuariosMap.get(actividad.RunnerUID) || null,
+    }));
+
+    return {
+      message: 'Feed obtenido exitosamente',
+      status: 'success',
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      runneruid,
+      siguiendo: runnerUIDsSeguidos.length,
+      actividades: actividadesConUsuario,
+    };
+  }
+
   async findByRunnerUID(runneruid: string) {
     // Verificar que el usuario existe
     const usuario = await this.prisma.sec_users.findFirst({
@@ -324,6 +450,152 @@ export class ActividadesService {
       total: actividades.length,
       runneruid,
       actividades,
+    };
+  }
+
+  async getFeedPublic() {
+    // Obtener las 20 actividades públicas más recientes
+    const actividades = await this.prisma.actividades.findMany({
+      where: {
+        Publico: true, // Solo actividades públicas
+      },
+      include: {
+        actividad_ruta: {
+          orderBy: {
+            punto_numero: 'asc',
+          },
+        },
+        actividad_ubicacion: true,
+        actividad_zonas: {
+          orderBy: {
+            zona_numero: 'asc',
+          },
+        },
+      },
+      orderBy: {
+        fechaActividad: 'desc', // Más recientes primero
+      },
+      take: 20, // Solo las 20 más recientes
+    });
+
+    // OPTIMIZACIÓN: Obtener información de usuarios en una sola consulta
+    const runnerUIDsUnicos = [...new Set(actividades.map((a) => a.RunnerUID))];
+    const usuariosMap = new Map();
+
+    if (runnerUIDsUnicos.length > 0) {
+      const usuarios = await this.prisma.sec_users.findMany({
+        where: {
+          RunnerUID: {
+            in: runnerUIDsUnicos,
+          },
+        },
+        select: {
+          RunnerUID: true,
+          name: true,
+          AliasRunner: true,
+          picture: true,
+          Ciudad: true,
+          Estado: true,
+          Pais: true,
+          TipoMembresia: true,
+        },
+      });
+
+      // Crear un mapa para acceso O(1) en lugar de buscar en cada iteración
+      usuarios.forEach((u) => usuariosMap.set(u.RunnerUID, u));
+    }
+
+    // Agregar información del usuario a cada actividad
+    const actividadesConUsuario = actividades.map((actividad) => ({
+      ...actividad,
+      usuario: usuariosMap.get(actividad.RunnerUID) || null,
+    }));
+
+    return {
+      message: 'Feed público obtenido exitosamente',
+      status: 'success',
+      total: actividadesConUsuario.length,
+      actividades: actividadesConUsuario,
+    };
+  }
+
+  async getPublicas(page: number = 1, limit: number = 20) {
+    // Calcular offset para paginación
+    const skip = (page - 1) * limit;
+
+    // Obtener todas las actividades públicas de todos los usuarios
+    const actividades = await this.prisma.actividades.findMany({
+      where: {
+        Publico: true, // Solo actividades públicas
+      },
+      include: {
+        actividad_ruta: {
+          orderBy: {
+            punto_numero: 'asc',
+          },
+        },
+        actividad_ubicacion: true,
+        actividad_zonas: {
+          orderBy: {
+            zona_numero: 'asc',
+          },
+        },
+      },
+      orderBy: {
+        fechaActividad: 'desc', // Más recientes primero
+      },
+      skip, // Paginación
+      take: limit, // Límite de resultados
+    });
+
+    // Obtener el total para la paginación
+    const total = await this.prisma.actividades.count({
+      where: {
+        Publico: true,
+      },
+    });
+
+    // OPTIMIZACIÓN: Obtener información de usuarios en una sola consulta
+    const runnerUIDsUnicos = [...new Set(actividades.map((a) => a.RunnerUID))];
+    const usuariosMap = new Map();
+
+    if (runnerUIDsUnicos.length > 0) {
+      const usuarios = await this.prisma.sec_users.findMany({
+        where: {
+          RunnerUID: {
+            in: runnerUIDsUnicos,
+          },
+        },
+        select: {
+          RunnerUID: true,
+          name: true,
+          AliasRunner: true,
+          picture: true,
+          Ciudad: true,
+          Estado: true,
+          Pais: true,
+          TipoMembresia: true,
+        },
+      });
+
+      // Crear un mapa para acceso O(1) en lugar de buscar en cada iteración
+      usuarios.forEach((u) => usuariosMap.set(u.RunnerUID, u));
+    }
+
+    // Agregar información del usuario a cada actividad
+    const actividadesConUsuario = actividades.map((actividad) => ({
+      ...actividad,
+      usuario: usuariosMap.get(actividad.RunnerUID) || null,
+    }));
+
+    return {
+      message: 'Actividades públicas obtenidas exitosamente',
+      status: 'success',
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      actividades: actividadesConUsuario,
     };
   }
 
@@ -383,6 +655,97 @@ export class ActividadesService {
     return {
       message: 'Actividad eliminada exitosamente',
       status: 'success',
+    };
+  }
+
+  async updatePublic(runneruid: string, updatePublicDto: UpdatePublicDto) {
+    // Verificar que el usuario existe
+    const usuario = await this.prisma.sec_users.findFirst({
+      where: { RunnerUID: runneruid },
+    });
+
+    if (!usuario) {
+      throw new NotFoundException(
+        `Usuario con RunnerUID ${runneruid} no encontrado`,
+      );
+    }
+
+    // Determinar el valor de Publico (por defecto true si no se especifica)
+    const publico = updatePublicDto.Publico !== undefined ? updatePublicDto.Publico : true;
+
+    // Si se proporciona un actID específico
+    if (updatePublicDto.actID) {
+      // Verificar que la actividad existe y pertenece al usuario
+      const actividad = await this.prisma.actividades.findFirst({
+        where: {
+          actID: updatePublicDto.actID,
+          RunnerUID: runneruid,
+        },
+      });
+
+      if (!actividad) {
+        throw new NotFoundException(
+          `Actividad con ID ${updatePublicDto.actID} no encontrada o no pertenece al usuario`,
+        );
+      }
+
+      // Actualizar la actividad
+      const actividadActualizada = await this.prisma.actividades.update({
+        where: { actID: updatePublicDto.actID },
+        data: { Publico: publico },
+      });
+
+      return {
+        message: `Actividad ${publico ? 'publicada' : 'ocultada'} exitosamente`,
+        status: 'success',
+        actividad: actividadActualizada,
+      };
+    }
+
+    // Si se proporciona un array de actIDs
+    if (updatePublicDto.actIDs && updatePublicDto.actIDs.length > 0) {
+      // Verificar que todas las actividades pertenezcan al usuario
+      const actividades = await this.prisma.actividades.findMany({
+        where: {
+          actID: { in: updatePublicDto.actIDs },
+          RunnerUID: runneruid,
+        },
+      });
+
+      if (actividades.length !== updatePublicDto.actIDs.length) {
+        throw new BadRequestException(
+          'Algunas actividades no existen o no pertenecen al usuario',
+        );
+      }
+
+      // Actualizar todas las actividades
+      await this.prisma.actividades.updateMany({
+        where: {
+          actID: { in: updatePublicDto.actIDs },
+          RunnerUID: runneruid,
+        },
+        data: { Publico: publico },
+      });
+
+      return {
+        message: `${actividades.length} actividad(es) ${publico ? 'publicada(s)' : 'ocultada(s)'} exitosamente`,
+        status: 'success',
+        total: actividades.length,
+      };
+    }
+
+    // Si no se proporciona actID ni actIDs, actualizar todas las actividades del usuario
+    const resultado = await this.prisma.actividades.updateMany({
+      where: {
+        RunnerUID: runneruid,
+      },
+      data: { Publico: publico },
+    });
+
+    return {
+      message: `${resultado.count} actividad(es) ${publico ? 'publicada(s)' : 'ocultada(s)'} exitosamente`,
+      status: 'success',
+      total: resultado.count,
     };
   }
 }

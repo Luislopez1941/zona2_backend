@@ -102,7 +102,7 @@ export class EquiposService {
 
     if (!equipo) {
       throw new NotFoundException(`Equipo con ID ${OrgID} no encontrado`);
-    }
+  }
 
     if (!equipo.Activo) {
       throw new ConflictException(`El equipo con ID ${OrgID} no está activo`);

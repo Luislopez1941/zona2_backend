@@ -16,6 +16,7 @@ model actividades {
   DistanciaKM         Decimal               @db.Decimal(6, 2)
   RitmoMinKm          String                @db.VarChar(10)
   Duracion            String                @db.VarChar(10)
+  Publico             Boolean               @default(false)
   Origen              String                @db.VarChar(20)
   Ciudad              String                @db.VarChar(20)
   Pais                String                @db.VarChar(20)
@@ -96,6 +97,16 @@ model sec_users {
 
   @@map("sec_users")
 }
+
+model Followers {
+  id                 Int    @id @default(autoincrement())
+  follower_runnerUID String @db.Char(36)
+  followed_runnerUID String @db.Char(36)
+
+  @@map("followers")
+  @@unique([follower_runnerUID, followed_runnerUID])
+}
+
 
 model zonas {
   zonaID       Int      @id @default(autoincrement())
