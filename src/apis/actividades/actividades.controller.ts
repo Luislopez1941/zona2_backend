@@ -12,7 +12,12 @@ export class ActividadesController {
     return this.actividadesService.create(createActividadeDto);
   }
 
-  @Get()
+  @Get('get-by-runneruid/:runneruid')
+  findByRunnerUID(@Param('runneruid') runneruid: string) {
+    return this.actividadesService.findByRunnerUID(runneruid);
+  }
+
+  @Get('get-all')
   findAll() {
     return this.actividadesService.findAll();
   }
