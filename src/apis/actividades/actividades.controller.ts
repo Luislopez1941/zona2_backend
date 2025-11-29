@@ -14,8 +14,11 @@ export class ActividadesController {
   }
 
   @Get('get-by-runneruid/:runneruid')
-  findByRunnerUID(@Param('runneruid') runneruid: string) {
-    return this.actividadesService.findByRunnerUID(runneruid);
+  findByRunnerUID(
+    @Param('runneruid') runneruid: string,
+    @Query('currentUser') currentUser?: string, // RunnerUID del usuario que está consultando (opcional)
+  ) {
+    return this.actividadesService.findByRunnerUID(runneruid, currentUser);
   }
 
   @Get('feed/:runneruid')
@@ -23,10 +26,11 @@ export class ActividadesController {
     @Param('runneruid') runneruid: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('currentUser') currentUser?: string, // RunnerUID del usuario que está viendo el feed
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 20;
-    return this.actividadesService.getFeed(runneruid, pageNum, limitNum);
+    return this.actividadesService.getFeed(runneruid, pageNum, limitNum, currentUser);
   }
 
   @Patch('update-public/:runneruid')
@@ -35,8 +39,9 @@ export class ActividadesController {
   }
 
   @Get('feed-public')
-  getFeedPublic() {
-    return this.actividadesService.getFeedPublic();
+  getFeedPublic(@Query('currentUser') currentUser?: string) {
+    // RunnerUID del usuario que está viendo el feed (opcional)
+    return this.actividadesService.getFeedPublic(currentUser);
   }
 
   @Get('get-all')

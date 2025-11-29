@@ -286,7 +286,7 @@ export class ActividadesService {
     };
   }
 
-  async getFeed(runneruid: string, page: number = 1, limit: number = 20) {
+  async getFeed(runneruid: string, page: number = 1, limit: number = 20, currentUserRunnerUID?: string) {
     // Verificar que el usuario existe
     const usuario = await this.prisma.sec_users.findFirst({
       where: { RunnerUID: runneruid },
@@ -392,10 +392,30 @@ export class ActividadesService {
       usuarios.forEach((u) => usuariosMap.set(u.RunnerUID, u));
     }
 
-    // Agregar información del usuario a cada actividad
+    // OPTIMIZACIÓN: Obtener todas las zonas que el usuario actual dio a estas actividades en una sola consulta
+    let zonasDelUsuarioMap = new Map<number, boolean>();
+    if (currentUserRunnerUID && actividades.length > 0) {
+      const actIDs = actividades.map((a) => a.actID);
+      const zonasDelUsuario = await this.prisma.zonas_actividades.findMany({
+        where: {
+          RunnerUID: currentUserRunnerUID,
+          actID: {
+            in: actIDs,
+          },
+        },
+        select: {
+          actID: true,
+        },
+      });
+      // Crear un mapa: actID -> true si el usuario ya dio zonas
+      zonasDelUsuario.forEach((z) => zonasDelUsuarioMap.set(z.actID, true));
+    }
+
+    // Agregar información del usuario y si ya dio zonas a cada actividad
     const actividadesConUsuario = actividades.map((actividad) => ({
       ...actividad,
       usuario: usuariosMap.get(actividad.RunnerUID) || null,
+      hasGivenZonas: currentUserRunnerUID ? (zonasDelUsuarioMap.get(actividad.actID) || false) : false,
     }));
 
     return {
@@ -411,7 +431,7 @@ export class ActividadesService {
     };
   }
 
-  async findByRunnerUID(runneruid: string) {
+  async findByRunnerUID(runneruid: string, currentUserRunnerUID?: string) {
     // Verificar que el usuario existe
     const usuario = await this.prisma.sec_users.findFirst({
       where: { RunnerUID: runneruid },
@@ -444,16 +464,41 @@ export class ActividadesService {
       },
     });
 
+    // OPTIMIZACIÓN: Obtener todas las zonas que el usuario actual dio a estas actividades en una sola consulta
+    let zonasDelUsuarioMap = new Map<number, boolean>();
+    if (currentUserRunnerUID && actividades.length > 0) {
+      const actIDs = actividades.map((a) => a.actID);
+      const zonasDelUsuario = await this.prisma.zonas_actividades.findMany({
+        where: {
+          RunnerUID: currentUserRunnerUID,
+          actID: {
+            in: actIDs,
+          },
+        },
+        select: {
+          actID: true,
+        },
+      });
+      // Crear un mapa: actID -> true si el usuario ya dio zonas
+      zonasDelUsuario.forEach((z) => zonasDelUsuarioMap.set(z.actID, true));
+    }
+
+    // Agregar información de si el usuario actual ya dio zonas a cada actividad
+    const actividadesConZonas = actividades.map((actividad) => ({
+      ...actividad,
+      hasGivenZonas: currentUserRunnerUID ? (zonasDelUsuarioMap.get(actividad.actID) || false) : false,
+    }));
+
     return {
       message: 'Actividades obtenidas exitosamente',
       status: 'success',
-      total: actividades.length,
+      total: actividadesConZonas.length,
       runneruid,
-      actividades,
+      actividades: actividadesConZonas,
     };
   }
 
-  async getFeedPublic() {
+  async getFeedPublic(currentUserRunnerUID?: string) {
     // Obtener las 20 actividades públicas más recientes
     const actividades = await this.prisma.actividades.findMany({
       where: {
@@ -505,10 +550,30 @@ export class ActividadesService {
       usuarios.forEach((u) => usuariosMap.set(u.RunnerUID, u));
     }
 
-    // Agregar información del usuario a cada actividad
+    // OPTIMIZACIÓN: Obtener todas las zonas que el usuario actual dio a estas actividades en una sola consulta
+    let zonasDelUsuarioMap = new Map<number, boolean>();
+    if (currentUserRunnerUID && actividades.length > 0) {
+      const actIDs = actividades.map((a) => a.actID);
+      const zonasDelUsuario = await this.prisma.zonas_actividades.findMany({
+        where: {
+          RunnerUID: currentUserRunnerUID,
+          actID: {
+            in: actIDs,
+          },
+        },
+        select: {
+          actID: true,
+        },
+      });
+      // Crear un mapa: actID -> true si el usuario ya dio zonas
+      zonasDelUsuario.forEach((z) => zonasDelUsuarioMap.set(z.actID, true));
+    }
+
+    // Agregar información del usuario y si ya dio zonas a cada actividad
     const actividadesConUsuario = actividades.map((actividad) => ({
       ...actividad,
       usuario: usuariosMap.get(actividad.RunnerUID) || null,
+      hasGivenZonas: currentUserRunnerUID ? (zonasDelUsuarioMap.get(actividad.actID) || false) : false,
     }));
 
     return {
