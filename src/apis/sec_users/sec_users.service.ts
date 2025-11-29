@@ -222,7 +222,7 @@ export class SecUsersService {
           InvitacionesMensuales: null,
           SuscripcionMXN: createSecUserDto.SuscripcionMXN ?? suscripcionInicial,
           PorcentajeCumplimiento: createSecUserDto.PorcentajeCumplimiento ?? 0.00,
-          NivelRunner: createSecUserDto.NivelRunner ?? 'b',
+          NivelRunner: createSecUserDto.NivelRunner ?? 'B',
           CFDIEmitido: createSecUserDto.CFDIEmitido ?? false,
           StravaAthleteID: createSecUserDto.StravaAthleteID
             ? BigInt(createSecUserDto.StravaAthleteID)
