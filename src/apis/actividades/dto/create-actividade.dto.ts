@@ -89,10 +89,12 @@ export class CreateActividadeDto {
 
   @IsString()
   @IsNotEmpty()
+  @MaxLength(20, { message: 'Ciudad debe tener máximo 20 caracteres' })
   Ciudad: string;
 
   @IsString()
   @IsNotEmpty()
+  @MaxLength(20, { message: 'Pais debe tener máximo 20 caracteres' })
   Pais: string;
 
   @IsString()

@@ -110,6 +110,11 @@ export class ActividadesService {
         plataformaNormalizada = plataformaNormalizada.toUpperCase();
       }
 
+      // Truncar campos que tienen límites de longitud en la BD
+      const ciudadTruncada = createActividadeDto.Ciudad.substring(0, 20);
+      const paisTruncado = createActividadeDto.Pais.substring(0, 20);
+      const origenTruncado = createActividadeDto.Origen.substring(0, 20);
+
       // Crear la actividad
       const actividad = await tx.actividades.create({
         data: {
@@ -120,9 +125,9 @@ export class ActividadesService {
           DistanciaKM: createActividadeDto.DistanciaKM,
           RitmoMinKm: createActividadeDto.RitmoMinKm,
           Duracion: createActividadeDto.Duracion,
-          Origen: createActividadeDto.Origen,
-          Ciudad: createActividadeDto.Ciudad,
-          Pais: createActividadeDto.Pais,
+          Origen: origenTruncado,
+          Ciudad: ciudadTruncada,
+          Pais: paisTruncado,
           enlace: createActividadeDto.enlace,
           fecha_inicio: createActividadeDto.fecha_inicio
             ? new Date(createActividadeDto.fecha_inicio)
