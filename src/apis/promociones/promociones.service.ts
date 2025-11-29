@@ -180,7 +180,7 @@ export class PromocionesService {
 
     if (!promocion) {
       throw new NotFoundException(`Promoción con ID ${id} no encontrada`);
-    }
+  }
 
     // Obtener información del organizador
     const organizador = await this.prisma.organizadores.findUnique({

@@ -1,4 +1,4 @@
-import { PrismaClient, promociones_TipoPromo, promociones_Estatus } from '@prisma/client';
+import { PrismaClient, promociones_TipoPromo, promociones_Estatus, inscripciones_PagoEstado, inscripciones_TallaPlayera, subscriptions_PlanCode, subscriptions_BillingCycle, subscriptions_Status, organizadores_Estatus } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -305,6 +305,1052 @@ async function main() {
   promociones.forEach((promocion, index) => {
     console.log(`   ${index + 1}. ${promocion.Titulo}`);
   });
+
+  // Crear datos de ejemplo para el usuario Z2R738268MVJ
+  console.log('\n👤 Creando datos de ejemplo para usuario Z2R738268MVJ...');
+  
+  const runnerUID = 'Z2R738268MVJ';
+  
+  // Verificar si el usuario existe
+  const usuario = await prisma.sec_users.findFirst({
+    where: { RunnerUID: runnerUID },
+  });
+
+  if (!usuario) {
+    console.log('⚠️  El usuario no existe. Creando usuario de ejemplo...');
+    // Crear usuario de ejemplo
+    await prisma.sec_users.create({
+      data: {
+        RunnerUID: runnerUID,
+        AliasRunner: 'R867883KCV',
+        name: 'Luis López',
+        login: '9982355989',
+        phone: '9982355989',
+        email: 'Luislopez@gmail.com',
+        pswd: 'hashed_password_example',
+        TipoMembresia: 'R',
+        WalletPuntosI: 10000,
+        WalletPuntos: 1500,
+        WalletSaldoMXN: 250.50,
+        Ciudad: 'Mérida',
+        Estado: 'Yucatán',
+        Pais: 'México',
+        FechaRegistro: new Date(),
+        active: 'Y',
+      },
+    });
+    console.log('✅ Usuario creado exitosamente.');
+  } else {
+    console.log('✅ Usuario ya existe.');
+  }
+
+  // Crear actividades
+  console.log('\n🏃 Creando actividades...');
+  const actividadesExistentes = await prisma.actividades.count({
+    where: { RunnerUID: runnerUID },
+  });
+
+  if (actividadesExistentes === 0) {
+    const actividades = [
+      {
+        RunnerUID: runnerUID,
+        plataforma: 'S',
+        titulo: 'Carrera matutina en Mérida',
+        fechaActividad: new Date('2024-12-01T06:00:00Z'),
+        DistanciaKM: 5.5,
+        RitmoMinKm: '5:30',
+        Duracion: '30:15',
+        Origen: 'Strava',
+        Ciudad: 'Mérida',
+        Pais: 'México',
+        enlace: 'https://www.strava.com/activities/123456789',
+      },
+      {
+        RunnerUID: runnerUID,
+        plataforma: 'S',
+        titulo: 'Entrenamiento de velocidad',
+        fechaActividad: new Date('2024-12-03T18:00:00Z'),
+        DistanciaKM: 3.2,
+        RitmoMinKm: '4:45',
+        Duracion: '15:12',
+        Origen: 'Strava',
+        Ciudad: 'Mérida',
+        Pais: 'México',
+        enlace: 'https://www.strava.com/activities/123456790',
+      },
+      {
+        RunnerUID: runnerUID,
+        plataforma: 'G',
+        titulo: 'Larga distancia dominical',
+        fechaActividad: new Date('2024-12-08T07:00:00Z'),
+        DistanciaKM: 15.8,
+        RitmoMinKm: '6:00',
+        Duracion: '1:34:48',
+        Origen: 'Garmin',
+        Ciudad: 'Mérida',
+        Pais: 'México',
+        enlace: 'https://connect.garmin.com/modern/activity/123456791',
+      },
+      {
+        RunnerUID: runnerUID,
+        plataforma: 'S',
+        titulo: 'Recuperación activa',
+        fechaActividad: new Date('2024-12-10T06:30:00Z'),
+        DistanciaKM: 4.0,
+        RitmoMinKm: '6:30',
+        Duracion: '26:00',
+        Origen: 'Strava',
+        Ciudad: 'Mérida',
+        Pais: 'México',
+        enlace: 'https://www.strava.com/activities/123456792',
+      },
+      {
+        RunnerUID: runnerUID,
+        plataforma: 'S',
+        titulo: 'Intervalos en pista',
+        fechaActividad: new Date('2024-12-12T19:00:00Z'),
+        DistanciaKM: 8.5,
+        RitmoMinKm: '5:00',
+        Duracion: '42:30',
+        Origen: 'Strava',
+        Ciudad: 'Mérida',
+        Pais: 'México',
+        enlace: 'https://www.strava.com/activities/123456793',
+      },
+    ];
+
+    for (const actividad of actividades) {
+      await prisma.actividades.create({
+        data: actividad,
+      });
+    }
+    console.log(`✅ ${actividades.length} actividades creadas exitosamente.`);
+  } else {
+    console.log(`⚠️  Ya existen ${actividadesExistentes} actividades para este usuario.`);
+  }
+
+  // Crear zonas (puntos)
+  console.log('\n💰 Creando zonas (puntos)...');
+  const zonasExistentes = await prisma.zonas.count({
+    where: { RunnerUID: runnerUID },
+  });
+
+  if (zonasExistentes === 0) {
+    const zonas = [
+      {
+        RunnerUID: runnerUID,
+        RunnerUIDRef: 'RR317DAO',
+        puntos: 500,
+        motivo: '01',
+        origen: '01',
+        fecha: new Date('2024-11-27T10:00:00Z'),
+      },
+      {
+        RunnerUID: runnerUID,
+        RunnerUIDRef: 'RR317DAO',
+        puntos: 300,
+        motivo: '02',
+        origen: '01',
+        fecha: new Date('2024-12-01T10:00:00Z'),
+      },
+      {
+        RunnerUID: runnerUID,
+        RunnerUIDRef: 'RR317DAO',
+        puntos: 200,
+        motivo: '03',
+        origen: '02',
+        fecha: new Date('2024-12-05T10:00:00Z'),
+      },
+    ];
+
+    for (const zona of zonas) {
+      await prisma.zonas.create({
+        data: zona,
+      });
+    }
+    console.log(`✅ ${zonas.length} zonas creadas exitosamente.`);
+  } else {
+    console.log(`⚠️  Ya existen ${zonasExistentes} zonas para este usuario.`);
+  }
+
+  // Crear suscripción
+  console.log('\n📋 Creando suscripción...');
+  const subscriptionUID = 'sub_' + runnerUID;
+  const suscripcionExistente = await prisma.subscriptions.findUnique({
+    where: { SubscriptionUID: subscriptionUID },
+  });
+
+  if (!suscripcionExistente) {
+    await prisma.subscriptions.create({
+      data: {
+        SubscriptionUID: subscriptionUID,
+        RunnerUID: runnerUID,
+        PlanCode: subscriptions_PlanCode.Runner,
+        PlanVersion: 1,
+        BillingCycle: subscriptions_BillingCycle.Yearly,
+        Status: subscriptions_Status.Active,
+        StartAt: new Date('2024-11-27'),
+        EndAt: new Date('2025-11-27'),
+        NextChargeAt: new Date('2025-11-27'),
+        Currency: 'MXN',
+        PriceMXN: 399.00,
+        AutoRenew: true,
+      },
+    });
+    console.log('✅ Suscripción creada exitosamente.');
+  } else {
+    console.log('✅ Suscripción ya existe.');
+  }
+
+  // Crear inscripciones a eventos
+  console.log('\n🎫 Creando inscripciones a eventos...');
+  const eventosDisponibles = await prisma.eventos.findMany({
+    take: 3,
+    orderBy: { FechaEvento: 'asc' },
+  });
+
+  if (eventosDisponibles.length > 0) {
+    const inscripcionesExistentes = await prisma.inscripciones.count({
+      where: { RunnerUID: runnerUID },
+    });
+
+    if (inscripcionesExistentes === 0) {
+      for (const evento of eventosDisponibles) {
+        const precioEvento = evento.PrecioEvento || 500.00;
+        await prisma.inscripciones.create({
+          data: {
+            EventoID: evento.EventoID,
+            OrgID: evento.OrgID,
+            FechaEvento: evento.FechaEvento,
+            RunnerUID: runnerUID,
+            RunnerNombre: 'Luis López',
+            RunnerEmail: 'Luislopez@gmail.com',
+            RunnerTelefono: '9982355989',
+            Genero: 'M',
+            FechaNacimiento: new Date('1990-05-15'),
+            TallaPlayera: inscripciones_TallaPlayera.Mediana,
+            DistanciaElegida: '10K',
+            CategoriaElegida: 'Libre',
+            Disciplina: 'Carrera',
+            PrecioOriginal: precioEvento,
+            PuntosUsados: 0,
+            DescuentoAplicadoMXN: 0.00,
+            PrecioFinal: precioEvento,
+            Moneda: evento.Moneda || 'MXN',
+            MetodoPago: 'Tarjeta',
+            PagoTransaccionID: `txn_${Date.now()}_${evento.EventoID}`,
+            PagoEstado: inscripciones_PagoEstado.Pagado,
+            FechaInscripcion: new Date(),
+          },
+        });
+      }
+      console.log(`✅ ${eventosDisponibles.length} inscripciones creadas exitosamente.`);
+    } else {
+      console.log(`⚠️  Ya existen ${inscripcionesExistentes} inscripciones para este usuario.`);
+    }
+  } else {
+    console.log('⚠️  No hay eventos disponibles para crear inscripciones.');
+  }
+
+  // Unir usuario a un equipo si existe
+  console.log('\n⚽ Verificando equipos...');
+  const equipo = await prisma.equipos.findFirst({
+    where: { Activo: true },
+  });
+
+  if (equipo && !usuario?.equipoID) {
+    await prisma.sec_users.updateMany({
+      where: { RunnerUID: runnerUID },
+      data: {
+        equipoID: equipo.OrgID.toString(),
+      },
+    });
+    console.log(`✅ Usuario unido al equipo: ${equipo.NombreEquipo || 'Equipo ID ' + equipo.OrgID}`);
+  } else if (usuario?.equipoID) {
+    console.log('✅ Usuario ya está en un equipo.');
+  } else {
+    console.log('⚠️  No hay equipos activos disponibles.');
+  }
+
+  console.log('\n✅ Datos de ejemplo para usuario Z2R738268MVJ completados exitosamente.');
+
+  // Crear datos de ejemplo para el usuario Z2R776985QXZ
+  console.log('\n👤 Creando datos de ejemplo para usuario Z2R776985QXZ...');
+  
+  const runnerUID2 = 'Z2R776985QXZ';
+  
+  // Verificar si el usuario existe
+  const usuario2 = await prisma.sec_users.findFirst({
+    where: { RunnerUID: runnerUID2 },
+  });
+
+  if (!usuario2) {
+    console.log('⚠️  El usuario no existe. Creando usuario de ejemplo...');
+    // Crear usuario de ejemplo
+    await prisma.sec_users.create({
+      data: {
+        RunnerUID: runnerUID2,
+        AliasRunner: 'R776985QXZ',
+        name: 'María García',
+        login: '9991234567',
+        phone: '9991234567',
+        email: 'mariagarcia@gmail.com',
+        pswd: 'hashed_password_example',
+        TipoMembresia: 'R',
+        WalletPuntosI: 10000,
+        WalletPuntos: 2000,
+        WalletSaldoMXN: 150.75,
+        Ciudad: 'Cancún',
+        Estado: 'Quintana Roo',
+        Pais: 'México',
+        FechaRegistro: new Date(),
+        active: 'Y',
+      },
+    });
+    console.log('✅ Usuario creado exitosamente.');
+  } else {
+    console.log('✅ Usuario ya existe.');
+  }
+
+  // Crear actividades
+  console.log('\n🏃 Creando actividades...');
+  const actividadesExistentes2 = await prisma.actividades.count({
+    where: { RunnerUID: runnerUID2 },
+  });
+
+  if (actividadesExistentes2 === 0) {
+    const actividades2 = [
+      {
+        RunnerUID: runnerUID2,
+        plataforma: 'S',
+        titulo: 'Carrera en la playa de Cancún',
+        fechaActividad: new Date('2024-12-02T07:00:00Z'),
+        DistanciaKM: 6.2,
+        RitmoMinKm: '5:45',
+        Duracion: '35:39',
+        Origen: 'Strava',
+        Ciudad: 'Cancún',
+        Pais: 'México',
+        enlace: 'https://www.strava.com/activities/123456794',
+      },
+      {
+        RunnerUID: runnerUID2,
+        plataforma: 'G',
+        titulo: 'Entrenamiento de resistencia',
+        fechaActividad: new Date('2024-12-05T06:30:00Z'),
+        DistanciaKM: 12.5,
+        RitmoMinKm: '6:15',
+        Duracion: '1:18:07',
+        Origen: 'Garmin',
+        Ciudad: 'Cancún',
+        Pais: 'México',
+        enlace: 'https://connect.garmin.com/modern/activity/123456795',
+      },
+      {
+        RunnerUID: runnerUID2,
+        plataforma: 'S',
+        titulo: 'Sesión de intervalos',
+        fechaActividad: new Date('2024-12-07T18:00:00Z'),
+        DistanciaKM: 4.8,
+        RitmoMinKm: '5:00',
+        Duracion: '24:00',
+        Origen: 'Strava',
+        Ciudad: 'Cancún',
+        Pais: 'México',
+        enlace: 'https://www.strava.com/activities/123456796',
+      },
+      {
+        RunnerUID: runnerUID2,
+        plataforma: 'S',
+        titulo: 'Carrera larga dominical',
+        fechaActividad: new Date('2024-12-09T08:00:00Z'),
+        DistanciaKM: 18.5,
+        RitmoMinKm: '6:00',
+        Duracion: '1:51:00',
+        Origen: 'Strava',
+        Ciudad: 'Cancún',
+        Pais: 'México',
+        enlace: 'https://www.strava.com/activities/123456797',
+      },
+      {
+        RunnerUID: runnerUID2,
+        plataforma: 'G',
+        titulo: 'Recuperación activa',
+        fechaActividad: new Date('2024-12-11T19:00:00Z'),
+        DistanciaKM: 3.5,
+        RitmoMinKm: '7:00',
+        Duracion: '24:30',
+        Origen: 'Garmin',
+        Ciudad: 'Cancún',
+        Pais: 'México',
+        enlace: 'https://connect.garmin.com/modern/activity/123456798',
+      },
+    ];
+
+    for (const actividad of actividades2) {
+      await prisma.actividades.create({
+        data: actividad,
+      });
+    }
+    console.log(`✅ ${actividades2.length} actividades creadas exitosamente.`);
+  } else {
+    console.log(`⚠️  Ya existen ${actividadesExistentes2} actividades para este usuario.`);
+  }
+
+  // Crear zonas (puntos)
+  console.log('\n💰 Creando zonas (puntos)...');
+  const zonasExistentes2 = await prisma.zonas.count({
+    where: { RunnerUID: runnerUID2 },
+  });
+
+  if (zonasExistentes2 === 0) {
+    const zonas2 = [
+      {
+        RunnerUID: runnerUID2,
+        RunnerUIDRef: 'RR317DAO',
+        puntos: 600,
+        motivo: '01',
+        origen: '01',
+        fecha: new Date('2024-11-28T10:00:00Z'),
+      },
+      {
+        RunnerUID: runnerUID2,
+        RunnerUIDRef: 'RR317DAO',
+        puntos: 400,
+        motivo: '02',
+        origen: '01',
+        fecha: new Date('2024-12-02T10:00:00Z'),
+      },
+      {
+        RunnerUID: runnerUID2,
+        RunnerUIDRef: 'RR317DAO',
+        puntos: 300,
+        motivo: '03',
+        origen: '02',
+        fecha: new Date('2024-12-06T10:00:00Z'),
+      },
+    ];
+
+    for (const zona of zonas2) {
+      await prisma.zonas.create({
+        data: zona,
+      });
+    }
+    console.log(`✅ ${zonas2.length} zonas creadas exitosamente.`);
+  } else {
+    console.log(`⚠️  Ya existen ${zonasExistentes2} zonas para este usuario.`);
+  }
+
+  // Crear suscripción
+  console.log('\n📋 Creando suscripción...');
+  const subscriptionUID2 = 'sub_' + runnerUID2;
+  const suscripcionExistente2 = await prisma.subscriptions.findUnique({
+    where: { SubscriptionUID: subscriptionUID2 },
+  });
+
+  if (!suscripcionExistente2) {
+    await prisma.subscriptions.create({
+      data: {
+        SubscriptionUID: subscriptionUID2,
+        RunnerUID: runnerUID2,
+        PlanCode: subscriptions_PlanCode.Runner,
+        PlanVersion: 1,
+        BillingCycle: subscriptions_BillingCycle.Yearly,
+        Status: subscriptions_Status.Active,
+        StartAt: new Date('2024-11-28'),
+        EndAt: new Date('2025-11-28'),
+        NextChargeAt: new Date('2025-11-28'),
+        Currency: 'MXN',
+        PriceMXN: 399.00,
+        AutoRenew: true,
+      },
+    });
+    console.log('✅ Suscripción creada exitosamente.');
+  } else {
+    console.log('✅ Suscripción ya existe.');
+  }
+
+  // Crear inscripciones a eventos
+  console.log('\n🎫 Creando inscripciones a eventos...');
+  const eventosDisponibles2 = await prisma.eventos.findMany({
+    skip: 3,
+    take: 2,
+    orderBy: { FechaEvento: 'asc' },
+  });
+
+  if (eventosDisponibles2.length > 0) {
+    const inscripcionesExistentes2 = await prisma.inscripciones.count({
+      where: { RunnerUID: runnerUID2 },
+    });
+
+    if (inscripcionesExistentes2 === 0) {
+      for (const evento of eventosDisponibles2) {
+        const precioEvento = evento.PrecioEvento || 500.00;
+        await prisma.inscripciones.create({
+          data: {
+            EventoID: evento.EventoID,
+            OrgID: evento.OrgID,
+            FechaEvento: evento.FechaEvento,
+            RunnerUID: runnerUID2,
+            RunnerNombre: 'María García',
+            RunnerEmail: 'mariagarcia@gmail.com',
+            RunnerTelefono: '9991234567',
+            Genero: 'F',
+            FechaNacimiento: new Date('1992-08-20'),
+            TallaPlayera: inscripciones_TallaPlayera.Chica,
+            DistanciaElegida: '5K',
+            CategoriaElegida: 'Libre',
+            Disciplina: 'Carrera',
+            PrecioOriginal: precioEvento,
+            PuntosUsados: 0,
+            DescuentoAplicadoMXN: 0.00,
+            PrecioFinal: precioEvento,
+            Moneda: evento.Moneda || 'MXN',
+            MetodoPago: 'Tarjeta',
+            PagoTransaccionID: `txn_${Date.now()}_${evento.EventoID}_2`,
+            PagoEstado: inscripciones_PagoEstado.Pagado,
+            FechaInscripcion: new Date(),
+          },
+        });
+      }
+      console.log(`✅ ${eventosDisponibles2.length} inscripciones creadas exitosamente.`);
+    } else {
+      console.log(`⚠️  Ya existen ${inscripcionesExistentes2} inscripciones para este usuario.`);
+    }
+  } else {
+    console.log('⚠️  No hay eventos disponibles para crear inscripciones.');
+  }
+
+  // Unir usuario a un equipo si existe
+  console.log('\n⚽ Verificando equipos...');
+  const equipo2 = await prisma.equipos.findFirst({
+    where: { Activo: true },
+  });
+
+  if (equipo2 && !usuario2?.equipoID) {
+    await prisma.sec_users.updateMany({
+      where: { RunnerUID: runnerUID2 },
+      data: {
+        equipoID: equipo2.OrgID.toString(),
+      },
+    });
+    console.log(`✅ Usuario unido al equipo: ${equipo2.NombreEquipo || 'Equipo ID ' + equipo2.OrgID}`);
+  } else if (usuario2?.equipoID) {
+    console.log('✅ Usuario ya está en un equipo.');
+  } else {
+    console.log('⚠️  No hay equipos activos disponibles.');
+  }
+
+  console.log('\n✅ Datos de ejemplo para usuario Z2R776985QXZ completados exitosamente.');
+
+  // Crear datos para el organizador Z2R698973TQU
+  console.log('\n🏢 Creando datos para organizador Z2R698973TQU...');
+  
+  const organizadorUID = 'Z2R698973TQU';
+  
+  // Verificar si el usuario organizador existe
+  const usuarioOrganizador = await prisma.sec_users.findFirst({
+    where: { RunnerUID: organizadorUID },
+  });
+
+  let organizadorRegistro;
+
+  if (!usuarioOrganizador) {
+    console.log('⚠️  El usuario organizador no existe. Creando usuario y organizador...');
+    
+    // Crear usuario organizador
+    const nuevoUsuario = await prisma.sec_users.create({
+      data: {
+        RunnerUID: organizadorUID,
+        AliasRunner: 'R698973TQU',
+        name: 'Carlos Méndez',
+        login: '9987654321',
+        phone: '9987654321',
+        email: 'carlos.mendez@eventos.com',
+        pswd: 'hashed_password_example',
+        TipoMembresia: 'O',
+        WalletPuntosI: 10000,
+        WalletPuntos: null,
+        WalletSaldoMXN: 500.00,
+        Ciudad: 'Mérida',
+        Estado: 'Yucatán',
+        Pais: 'México',
+        FechaRegistro: new Date(),
+        active: 'Y',
+      },
+    });
+    console.log('✅ Usuario organizador creado exitosamente.');
+
+    // Crear registro en organizadores
+    organizadorRegistro = await prisma.organizadores.create({
+      data: {
+        RunnerUID: organizadorUID,
+        NombreComercial: 'Eventos Deportivos Mérida',
+        RazonSocial: 'Eventos Deportivos Mérida SA de CV',
+        ContactoNombre: 'Carlos Méndez',
+        ContactoEmail: 'carlos.mendez@eventos.com',
+        ContactoTelefono: '9987654321',
+        RFC: 'MEMC850101ABC',
+        Ciudad: 'Mérida',
+        Estado: 'Yucatán',
+        Pais: 'México',
+        Estatus: 'activo',
+      },
+    });
+    console.log(`✅ Organizador creado con ID: ${organizadorRegistro.OrgID}`);
+  } else {
+    console.log('✅ Usuario organizador ya existe.');
+    
+    // Buscar el registro de organizador
+    organizadorRegistro = await prisma.organizadores.findFirst({
+      where: { RunnerUID: organizadorUID },
+    });
+
+    if (!organizadorRegistro) {
+      // Si el usuario existe pero no tiene registro de organizador, crearlo
+      organizadorRegistro = await prisma.organizadores.create({
+        data: {
+          RunnerUID: organizadorUID,
+          NombreComercial: 'Eventos Deportivos Mérida',
+          RazonSocial: 'Eventos Deportivos Mérida SA de CV',
+          ContactoNombre: 'Carlos Méndez',
+          ContactoEmail: 'carlos.mendez@eventos.com',
+          ContactoTelefono: '9987654321',
+          RFC: 'MEMC850101ABC',
+          Ciudad: 'Mérida',
+          Estado: 'Yucatán',
+          Pais: 'México',
+          Estatus: organizadores_Estatus.activo,
+        },
+      });
+      console.log(`✅ Organizador creado con ID: ${organizadorRegistro.OrgID}`);
+    } else {
+      console.log(`✅ Organizador ya existe con ID: ${organizadorRegistro.OrgID}`);
+    }
+  }
+
+  // Crear eventos para este organizador
+  console.log('\n🎉 Creando eventos para el organizador...');
+  const eventosOrganizadorExistentes = await prisma.eventos.count({
+    where: { OrgID: organizadorRegistro.OrgID },
+  });
+
+  if (eventosOrganizadorExistentes === 0) {
+    const eventosOrganizador = [
+      {
+        OrgID: organizadorRegistro.OrgID,
+        Titulo: 'Maratón de la Riviera Maya 2025',
+        Subtitulo: 'Carrera por las playas más hermosas de la Riviera Maya',
+        TipoEvento: 'Carrera',
+        Distancias: '5K, 10K, 21K, 42K',
+        Categorias: 'Libre, Élite, Veteranos',
+        FechaEvento: new Date('2025-03-15'),
+        HoraEvento: new Date('1970-01-01T06:00:00Z'),
+        Ciudad: 'Playa del Carmen',
+        Estado: 'Quintana Roo',
+        Pais: 'México',
+        Lugar: 'Playa Mamitas',
+        UrlMapa: 'https://maps.google.com/playadelcarmen',
+        UrlImagen: 'https://ejemplo.com/riviera-maya.jpg',
+        PrecioEvento: 750.00,
+        Moneda: 'MXN',
+        Estatus: 'publicado',
+      },
+      {
+        OrgID: organizadorRegistro.OrgID,
+        Titulo: 'Carrera Nocturna de Mérida',
+        Subtitulo: 'Corre bajo las estrellas en el centro histórico',
+        TipoEvento: 'Carrera',
+        Distancias: '5K, 10K',
+        Categorias: 'Libre',
+        FechaEvento: new Date('2025-04-20'),
+        HoraEvento: new Date('1970-01-01T20:00:00Z'),
+        Ciudad: 'Mérida',
+        Estado: 'Yucatán',
+        Pais: 'México',
+        Lugar: 'Centro Histórico de Mérida',
+        UrlMapa: 'https://maps.google.com/merida',
+        UrlImagen: 'https://ejemplo.com/merida-nocturna.jpg',
+        PrecioEvento: 450.00,
+        Moneda: 'MXN',
+        Estatus: 'publicado',
+      },
+      {
+        OrgID: organizadorRegistro.OrgID,
+        Titulo: 'Trail Running en Cenotes',
+        Subtitulo: 'Carrera de trail running por los cenotes de Yucatán',
+        TipoEvento: 'Trail',
+        Distancias: '10K, 21K',
+        Categorias: 'Libre, Veteranos',
+        FechaEvento: new Date('2025-05-10'),
+        HoraEvento: new Date('1970-01-01T07:00:00Z'),
+        Ciudad: 'Valladolid',
+        Estado: 'Yucatán',
+        Pais: 'México',
+        Lugar: 'Cenote Xkeken',
+        UrlMapa: 'https://maps.google.com/valladolid',
+        UrlImagen: 'https://ejemplo.com/cenotes.jpg',
+        PrecioEvento: 600.00,
+        Moneda: 'MXN',
+        Estatus: 'publicado',
+      },
+    ];
+
+    for (const evento of eventosOrganizador) {
+      await prisma.eventos.create({
+        data: evento,
+      });
+    }
+    console.log(`✅ ${eventosOrganizador.length} eventos creados para el organizador.`);
+  } else {
+    console.log(`⚠️  Ya existen ${eventosOrganizadorExistentes} eventos para este organizador.`);
+  }
+
+  // Crear promociones para este organizador
+  console.log('\n🎁 Creando promociones para el organizador...');
+  const promocionesOrganizadorExistentes = await prisma.promociones.count({
+    where: { OrgID: organizadorRegistro.OrgID },
+  });
+
+  if (promocionesOrganizadorExistentes === 0) {
+    const promocionesOrganizador = [
+      {
+        OrgID: organizadorRegistro.OrgID,
+        Titulo: 'Descuento Early Bird - 30% OFF',
+        Subtitulo: 'Inscríbete antes del 1 de marzo y obtén un 30% de descuento en todos nuestros eventos. ¡No te lo pierdas!',
+        Precio: 0.00,
+        Moneda: 'MXN',
+        MaxPuntosZ2: 8000,
+        DescuentoImporte: 30.00,
+        TipoPromo: promociones_TipoPromo.DescuentoZ2,
+        FechaInicio: new Date('2025-01-01'),
+        FechaFin: new Date('2025-03-01'),
+        Estatus: promociones_Estatus.Activa,
+      },
+      {
+        OrgID: organizadorRegistro.OrgID,
+        Titulo: 'Pack de 3 eventos',
+        Subtitulo: 'Inscríbete a 3 eventos y obtén el cuarto gratis. Válido para eventos de 2025.',
+        Precio: 0.00,
+        Moneda: 'MXN',
+        MaxPuntosZ2: 10000,
+        DescuentoImporte: 0.00,
+        TipoPromo: promociones_TipoPromo.ProductoGratis,
+        FechaInicio: new Date('2025-01-01'),
+        FechaFin: new Date('2025-12-31'),
+        Estatus: promociones_Estatus.Activa,
+      },
+    ];
+
+    for (const promocion of promocionesOrganizador) {
+      await prisma.promociones.create({
+        data: promocion,
+      });
+    }
+    console.log(`✅ ${promocionesOrganizador.length} promociones creadas para el organizador.`);
+  } else {
+    console.log(`⚠️  Ya existen ${promocionesOrganizadorExistentes} promociones para este organizador.`);
+  }
+
+  // Crear suscripción para el organizador
+  console.log('\n📋 Creando suscripción para el organizador...');
+  const subscriptionUIDOrg = 'sub_' + organizadorUID;
+  const suscripcionOrgExistente = await prisma.subscriptions.findUnique({
+    where: { SubscriptionUID: subscriptionUIDOrg },
+  });
+
+  if (!suscripcionOrgExistente) {
+    await prisma.subscriptions.create({
+      data: {
+        SubscriptionUID: subscriptionUIDOrg,
+        RunnerUID: organizadorUID,
+        PlanCode: subscriptions_PlanCode.Organizador,
+        PlanVersion: 1,
+        BillingCycle: subscriptions_BillingCycle.Yearly,
+        Status: subscriptions_Status.Active,
+        StartAt: new Date('2024-11-01'),
+        EndAt: new Date('2025-11-01'),
+        NextChargeAt: new Date('2025-11-01'),
+        Currency: 'MXN',
+        PriceMXN: 399.00,
+        AutoRenew: true,
+      },
+    });
+    console.log('✅ Suscripción creada exitosamente para el organizador.');
+  } else {
+    console.log('✅ Suscripción ya existe para el organizador.');
+  }
+
+  console.log('\n✅ Datos para organizador Z2R698973TQU completados exitosamente.');
+
+  // Crear equipos y asegurar inscripciones
+  console.log('\n⚽ Creando equipos y asegurando inscripciones...');
+  
+  // 1. Crear equipo para Luis López (Z2R738268MVJ)
+  const runnerUID1 = 'Z2R738268MVJ';
+  const usuario1 = await prisma.sec_users.findFirst({
+    where: { RunnerUID: runnerUID1 },
+  });
+
+  if (usuario1) {
+    // Buscar o crear equipo para Luis
+    let equipoLuis = await prisma.equipos.findFirst({
+      where: { RunnerUID: runnerUID1 },
+    });
+
+    if (!equipoLuis) {
+      equipoLuis = await prisma.equipos.create({
+        data: {
+          RunnerUID: runnerUID1,
+          NombreEquipo: 'Corredores de Mérida',
+          AliasEquipo: 'MERIDA_RUN',
+          Contacto: 'Luis López',
+          Celular: '9982355989',
+          Correo: 'Luislopez@gmail.com',
+          Ciudad: 'Mérida',
+          Estado: 'Yucatán',
+          Pais: 'México',
+          Descripcion: 'Equipo de corredores de Mérida',
+          Disciplinas: 'Carrera, Trail Running',
+          AtletasActivos: 1,
+          Activo: true,
+        },
+      });
+      console.log(`✅ Equipo creado para Luis López: ${equipoLuis.NombreEquipo}`);
+    }
+
+    // Unir a Luis a su equipo
+    if (!usuario1.equipoID || usuario1.equipoID !== equipoLuis.OrgID.toString()) {
+      await prisma.sec_users.updateMany({
+        where: { RunnerUID: runnerUID1 },
+        data: {
+          equipoID: equipoLuis.OrgID.toString(),
+        },
+      });
+      await prisma.equipos.update({
+        where: { OrgID: equipoLuis.OrgID },
+        data: {
+          AtletasActivos: {
+            increment: 1,
+          },
+        },
+      });
+      console.log(`✅ Luis López unido a su equipo: ${equipoLuis.NombreEquipo}`);
+    }
+
+    // Asegurar inscripciones para Luis
+    const inscripcionesLuis = await prisma.inscripciones.count({
+      where: { RunnerUID: runnerUID1 },
+    });
+
+    if (inscripcionesLuis < 5) {
+      const eventosParaLuis = await prisma.eventos.findMany({
+        where: {
+          Estatus: 'publicado',
+          FechaEvento: {
+            gte: new Date(),
+          },
+        },
+        take: 5 - inscripcionesLuis,
+        orderBy: { FechaEvento: 'asc' },
+      });
+
+      for (const evento of eventosParaLuis) {
+        const yaInscrito = await prisma.inscripciones.findFirst({
+          where: {
+            RunnerUID: runnerUID1,
+            EventoID: evento.EventoID,
+          },
+        });
+
+        if (!yaInscrito) {
+          const precioEvento = evento.PrecioEvento || 500.00;
+          await prisma.inscripciones.create({
+            data: {
+              EventoID: evento.EventoID,
+              OrgID: evento.OrgID,
+              FechaEvento: evento.FechaEvento,
+              RunnerUID: runnerUID1,
+              RunnerNombre: 'Luis López',
+              RunnerEmail: 'Luislopez@gmail.com',
+              RunnerTelefono: '9982355989',
+              Genero: 'M',
+              FechaNacimiento: new Date('1990-05-15'),
+              TallaPlayera: inscripciones_TallaPlayera.Mediana,
+              DistanciaElegida: '10K',
+              CategoriaElegida: 'Libre',
+              Disciplina: 'Carrera',
+              PrecioOriginal: precioEvento,
+              PuntosUsados: 0,
+              DescuentoAplicadoMXN: 0.00,
+              PrecioFinal: precioEvento,
+              Moneda: evento.Moneda || 'MXN',
+              MetodoPago: 'Tarjeta',
+              PagoTransaccionID: `txn_luis_${Date.now()}_${evento.EventoID}`,
+              PagoEstado: inscripciones_PagoEstado.Pagado,
+              FechaInscripcion: new Date(),
+            },
+          });
+        }
+      }
+      console.log(`✅ Inscripciones verificadas/creadas para Luis López`);
+    }
+  }
+
+  // 2. Crear equipo para María García (Z2R776985QXZ)
+  const runnerUIDMaria = 'Z2R776985QXZ';
+  const usuarioMaria = await prisma.sec_users.findFirst({
+    where: { RunnerUID: runnerUIDMaria },
+  });
+
+  if (usuarioMaria) {
+    // Buscar o crear equipo para María
+    let equipoMaria = await prisma.equipos.findFirst({
+      where: { RunnerUID: runnerUIDMaria },
+    });
+
+    if (!equipoMaria) {
+      equipoMaria = await prisma.equipos.create({
+        data: {
+          RunnerUID: runnerUIDMaria,
+          NombreEquipo: 'Corredoras de Cancún',
+          AliasEquipo: 'CANCUN_RUN',
+          Contacto: 'María García',
+          Celular: '9991234567',
+          Correo: 'mariagarcia@gmail.com',
+          Ciudad: 'Cancún',
+          Estado: 'Quintana Roo',
+          Pais: 'México',
+          Descripcion: 'Equipo de corredoras de Cancún',
+          Disciplinas: 'Carrera, Playa',
+          AtletasActivos: 1,
+          Activo: true,
+        },
+      });
+      console.log(`✅ Equipo creado para María García: ${equipoMaria.NombreEquipo}`);
+    }
+
+    // Unir a María a su equipo
+    if (!usuarioMaria.equipoID || usuarioMaria.equipoID !== equipoMaria.OrgID.toString()) {
+      await prisma.sec_users.updateMany({
+        where: { RunnerUID: runnerUIDMaria },
+        data: {
+          equipoID: equipoMaria.OrgID.toString(),
+        },
+      });
+      await prisma.equipos.update({
+        where: { OrgID: equipoMaria.OrgID },
+        data: {
+          AtletasActivos: {
+            increment: 1,
+          },
+        },
+      });
+      console.log(`✅ María García unida a su equipo: ${equipoMaria.NombreEquipo}`);
+    }
+
+    // Asegurar inscripciones para María
+    const inscripcionesMaria = await prisma.inscripciones.count({
+      where: { RunnerUID: runnerUIDMaria },
+    });
+
+    if (inscripcionesMaria < 4) {
+      const eventosParaMaria = await prisma.eventos.findMany({
+        where: {
+          Estatus: 'publicado',
+          FechaEvento: {
+            gte: new Date(),
+          },
+        },
+        skip: inscripcionesMaria,
+        take: 4 - inscripcionesMaria,
+        orderBy: { FechaEvento: 'asc' },
+      });
+
+      for (const evento of eventosParaMaria) {
+        const yaInscrita = await prisma.inscripciones.findFirst({
+          where: {
+            RunnerUID: runnerUIDMaria,
+            EventoID: evento.EventoID,
+          },
+        });
+
+        if (!yaInscrita) {
+          const precioEvento = evento.PrecioEvento || 500.00;
+          await prisma.inscripciones.create({
+            data: {
+              EventoID: evento.EventoID,
+              OrgID: evento.OrgID,
+              FechaEvento: evento.FechaEvento,
+              RunnerUID: runnerUIDMaria,
+              RunnerNombre: 'María García',
+              RunnerEmail: 'mariagarcia@gmail.com',
+              RunnerTelefono: '9991234567',
+              Genero: 'F',
+              FechaNacimiento: new Date('1992-08-20'),
+              TallaPlayera: inscripciones_TallaPlayera.Chica,
+              DistanciaElegida: '5K',
+              CategoriaElegida: 'Libre',
+              Disciplina: 'Carrera',
+              PrecioOriginal: precioEvento,
+              PuntosUsados: 0,
+              DescuentoAplicadoMXN: 0.00,
+              PrecioFinal: precioEvento,
+              Moneda: evento.Moneda || 'MXN',
+              MetodoPago: 'Tarjeta',
+              PagoTransaccionID: `txn_maria_${Date.now()}_${evento.EventoID}`,
+              PagoEstado: inscripciones_PagoEstado.Pagado,
+              FechaInscripcion: new Date(),
+            },
+          });
+        }
+      }
+      console.log(`✅ Inscripciones verificadas/creadas para María García`);
+    }
+  }
+
+  // 3. Crear equipo para el organizador Carlos Méndez (Z2R698973TQU)
+  const organizadorUIDFinal = 'Z2R698973TQU';
+  const usuarioOrgFinal = await prisma.sec_users.findFirst({
+    where: { RunnerUID: organizadorUIDFinal },
+  });
+
+  if (usuarioOrgFinal) {
+    const organizadorRegistroFinal = await prisma.organizadores.findFirst({
+      where: { RunnerUID: organizadorUIDFinal },
+    });
+
+    if (organizadorRegistroFinal) {
+      // Buscar o crear equipo para el organizador
+      let equipoOrgFinal = await prisma.equipos.findFirst({
+        where: { RunnerUID: organizadorUIDFinal },
+      });
+
+      if (!equipoOrgFinal) {
+        equipoOrgFinal = await prisma.equipos.create({
+          data: {
+            RunnerUID: organizadorUIDFinal,
+            NombreEquipo: 'Equipo Eventos Deportivos Mérida',
+            AliasEquipo: 'EDM_TEAM',
+            Contacto: 'Carlos Méndez',
+            Celular: '9987654321',
+            Correo: 'carlos.mendez@eventos.com',
+            Ciudad: 'Mérida',
+            Estado: 'Yucatán',
+            Pais: 'México',
+            Descripcion: 'Equipo oficial de Eventos Deportivos Mérida',
+            Disciplinas: 'Carrera, Trail Running, Maratón',
+            AtletasActivos: 0,
+            EntrenadoresTotales: 2,
+            Activo: true,
+          },
+        });
+        console.log(`✅ Equipo creado para el organizador: ${equipoOrgFinal.NombreEquipo}`);
+      }
+    }
+  }
+
+  console.log('\n✅ Equipos e inscripciones completados exitosamente.');
 }
 
 main()

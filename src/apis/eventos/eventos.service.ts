@@ -158,7 +158,7 @@ export class EventosService {
         throw new NotFoundException(
           `Organizador con ID ${updateEventoDto.OrgID} no encontrado`,
         );
-      }
+  }
     }
 
     // Construir objeto de actualización

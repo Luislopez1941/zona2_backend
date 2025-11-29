@@ -19,7 +19,7 @@ export class PromocionesController {
   ) {
     // Si no se pasan parámetros, traer todas las promociones
     if (!page && !limit) {
-      return this.promocionesService.findAll();
+    return this.promocionesService.findAll();
     }
 
     // Si se pasan parámetros, validar y usar paginación
