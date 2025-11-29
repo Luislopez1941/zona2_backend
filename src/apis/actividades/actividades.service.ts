@@ -42,7 +42,10 @@ export class ActividadesService {
           RunnerUID: createActividadeDto.RunnerUID,
           Status: subscriptions_Status.Active,
         },
-        orderBy: { UpdatedAt: 'desc' },
+        orderBy: [
+          { RunnerUID: 'asc' },
+          { UpdatedAt: 'desc' },
+        ],
       }),
       // Inscripciones próximas (próximos 3 eventos)
       this.prisma.inscripciones.findMany({

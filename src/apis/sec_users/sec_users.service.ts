@@ -205,7 +205,7 @@ export class SecUsersService {
           EmergenciaParentesco: createSecUserDto.EmergenciaParentesco,
           equipoID: createSecUserDto.equipoID,
           RunnerUIDRef: finalRunnerUIDRef,
-          active: createSecUserDto.active,
+          active: createSecUserDto.active ?? 'Y',
           activation_code: createSecUserDto.activation_code,
           priv_admin: createSecUserDto.priv_admin,
           mfa: createSecUserDto.mfa,
@@ -222,7 +222,7 @@ export class SecUsersService {
           InvitacionesMensuales: null,
           SuscripcionMXN: createSecUserDto.SuscripcionMXN ?? suscripcionInicial,
           PorcentajeCumplimiento: createSecUserDto.PorcentajeCumplimiento ?? 0.00,
-          NivelRunner: createSecUserDto.NivelRunner,
+          NivelRunner: createSecUserDto.NivelRunner ?? 'b',
           CFDIEmitido: createSecUserDto.CFDIEmitido ?? false,
           StravaAthleteID: createSecUserDto.StravaAthleteID
             ? BigInt(createSecUserDto.StravaAthleteID)
@@ -252,6 +252,18 @@ export class SecUsersService {
             },
           });
         }
+
+        // Crear registro en zonas para el nuevo usuario
+        await tx.zonas.create({
+          data: {
+            RunnerUID: runnerUID,
+            RunnerUIDRef: null,
+            puntos: puntosIniciales,
+            motivo: 'R',
+            origen: '3',
+            fecha: new Date(),
+          },
+        });
 
         return newUser;
       });
@@ -1282,7 +1294,10 @@ export class SecUsersService {
         // 2. Buscar y actualizar la suscripción existente
         const existingSubscription = await tx.subscriptions.findFirst({
           where: { RunnerUID },
-          orderBy: { UpdatedAt: 'desc' },
+          orderBy: [
+            { RunnerUID: 'asc' },
+            { UpdatedAt: 'desc' },
+          ],
         });
 
         let subscriptionUID = existingSubscription?.SubscriptionUID;
