@@ -1,4 +1,4 @@
-import { IsNumber, IsOptional, IsArray, IsBoolean } from 'class-validator';
+import { IsNumber, IsOptional, IsArray, IsBoolean, IsNotEmpty } from 'class-validator';
 
 export class UpdatePublicDto {
   @IsOptional()
@@ -10,8 +10,8 @@ export class UpdatePublicDto {
   @IsNumber({}, { each: true })
   actIDs?: number[]; // Array de IDs de actividades a actualizar
 
-  @IsOptional()
   @IsBoolean()
-  Publico?: boolean; // true para hacer pública, false para hacer privada
+  @IsNotEmpty()
+  Publico: boolean; // true para hacer pública, false para hacer privada (requerido)
 }
 
