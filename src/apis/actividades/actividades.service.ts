@@ -91,11 +91,30 @@ export class ActividadesService {
 
     // Crear la actividad y sus registros relacionados en una transacción
     const resultado = await this.prisma.$transaction(async (tx) => {
+      // Normalizar plataforma a 1 carácter si viene un string más largo
+      let plataformaNormalizada = createActividadeDto.plataforma;
+      if (plataformaNormalizada.length > 1) {
+        // Convertir nombres comunes a códigos de 1 carácter
+        const plataformaLower = plataformaNormalizada.toLowerCase();
+        if (plataformaLower.includes('strava')) {
+          plataformaNormalizada = 'S';
+        } else if (plataformaLower.includes('garmin')) {
+          plataformaNormalizada = 'G';
+        } else if (plataformaLower.includes('manual')) {
+          plataformaNormalizada = 'M';
+        } else {
+          // Tomar solo el primer carácter
+          plataformaNormalizada = plataformaNormalizada.charAt(0).toUpperCase();
+        }
+      } else {
+        plataformaNormalizada = plataformaNormalizada.toUpperCase();
+      }
+
       // Crear la actividad
       const actividad = await tx.actividades.create({
         data: {
           RunnerUID: createActividadeDto.RunnerUID,
-          plataforma: createActividadeDto.plataforma,
+          plataforma: plataformaNormalizada,
           titulo: createActividadeDto.titulo,
           fechaActividad: new Date(createActividadeDto.fechaActividad),
           DistanciaKM: createActividadeDto.DistanciaKM,

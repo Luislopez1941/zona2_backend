@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsDateString, IsNumber, IsOptional, Min, IsArray, ValidateNested, IsBoolean } from 'class-validator';
+import { IsString, IsNotEmpty, IsDateString, IsNumber, IsOptional, Min, IsArray, ValidateNested, IsBoolean, MaxLength, Matches } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class RutaPuntoDto {
@@ -58,7 +58,9 @@ export class CreateActividadeDto {
 
   @IsString()
   @IsNotEmpty()
-  plataforma: string; // 'S' para Strava, 'G' para Garmin, etc.
+  @MaxLength(1, { message: 'plataforma debe ser un solo carácter: S (Strava), G (Garmin), M (Manual)' })
+  @Matches(/^[SGM]$/, { message: 'plataforma debe ser S, G o M' })
+  plataforma: string; // 'S' para Strava, 'G' para Garmin, 'M' para Manual
 
   @IsString()
   @IsNotEmpty()
