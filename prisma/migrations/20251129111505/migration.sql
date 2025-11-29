@@ -8,6 +8,7 @@ CREATE TABLE `actividades` (
     `DistanciaKM` DECIMAL(6, 2) NOT NULL,
     `RitmoMinKm` VARCHAR(10) NOT NULL,
     `Duracion` VARCHAR(10) NOT NULL,
+    `Public` BOOLEAN NOT NULL DEFAULT false,
     `Origen` VARCHAR(20) NOT NULL,
     `Ciudad` VARCHAR(20) NOT NULL,
     `Pais` VARCHAR(20) NOT NULL,
@@ -27,6 +28,22 @@ CREATE TABLE `actividades` (
     `fecha_registro` DATETIME(0) NULL,
 
     PRIMARY KEY (`actID`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `notificaciones` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `toRunnerUID` CHAR(36) NOT NULL,
+    `fromRunnerUID` CHAR(36) NOT NULL,
+    `tipo` VARCHAR(50) NOT NULL,
+    `mensaje` VARCHAR(255) NULL,
+    `leida` BOOLEAN NOT NULL DEFAULT false,
+    `fecha` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    INDEX `notificaciones_toRunnerUID_idx`(`toRunnerUID`),
+    INDEX `notificaciones_fromRunnerUID_idx`(`fromRunnerUID`),
+    UNIQUE INDEX `notificaciones_toRunnerUID_fromRunnerUID_tipo_key`(`toRunnerUID`, `fromRunnerUID`, `tipo`),
+    PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
@@ -88,10 +105,20 @@ CREATE TABLE `sec_users` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
+CREATE TABLE `followers` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `follower_runnerUID` CHAR(36) NOT NULL,
+    `followed_runnerUID` CHAR(36) NOT NULL,
+
+    UNIQUE INDEX `followers_follower_runnerUID_followed_runnerUID_key`(`follower_runnerUID`, `followed_runnerUID`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
 CREATE TABLE `zonas` (
     `zonaID` INTEGER NOT NULL AUTO_INCREMENT,
     `RunnerUID` VARCHAR(36) NOT NULL,
-    `RunnerUIDRef` VARCHAR(36) NOT NULL,
+    `RunnerUIDRef` VARCHAR(36) NULL,
     `puntos` INTEGER NOT NULL,
     `motivo` CHAR(2) NOT NULL,
     `origen` CHAR(2) NOT NULL,
@@ -441,6 +468,20 @@ CREATE TABLE `actividad_zonas` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
+CREATE TABLE `zonas_actividades` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `RunnerUID` VARCHAR(36) NOT NULL,
+    `actID` INTEGER NOT NULL,
+    `puntos` INTEGER NOT NULL DEFAULT 100,
+    `fecha` DATETIME(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
+
+    INDEX `zonas_actividades_RunnerUID_idx`(`RunnerUID`),
+    INDEX `zonas_actividades_actID_idx`(`actID`),
+    UNIQUE INDEX `zonas_actividades_RunnerUID_actID_key`(`RunnerUID`, `actID`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
 CREATE TABLE `pacers` (
     `PacerID` INTEGER NOT NULL AUTO_INCREMENT,
     `RunnerUID` CHAR(36) NOT NULL,
@@ -500,3 +541,6 @@ ALTER TABLE `actividad_ubicacion` ADD CONSTRAINT `actividad_ubicacion_ibfk_1` FO
 
 -- AddForeignKey
 ALTER TABLE `actividad_zonas` ADD CONSTRAINT `actividad_zonas_ibfk_1` FOREIGN KEY (`actividad_id`) REFERENCES `actividades`(`actID`) ON DELETE CASCADE ON UPDATE RESTRICT;
+
+-- AddForeignKey
+ALTER TABLE `zonas_actividades` ADD CONSTRAINT `zonas_actividades_actID_fkey` FOREIGN KEY (`actID`) REFERENCES `actividades`(`actID`) ON DELETE CASCADE ON UPDATE RESTRICT;

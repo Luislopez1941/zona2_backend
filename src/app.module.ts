@@ -19,7 +19,6 @@ import { FollowersModule } from './apis/followers/followers.module';
 import { NotificacionesModule } from './apis/notificaciones/notificaciones.module';
 import { ZonasActividadesModule } from './apis/zonas_actividades/zonas_actividades.module';
 import { ActividadZonasModule } from './apis/actividad_zonas/actividad_zonas.module';
-import { ZonasActividadesModule } from './apis/zonas_actividades/zonas_actividades.module';
 
 
 @Module({
