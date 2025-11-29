@@ -89,22 +89,98 @@ export class ActividadesService {
       }),
     );
 
-    // Crear la actividad
-    const actividad = await this.prisma.actividades.create({
-      data: {
-        RunnerUID: createActividadeDto.RunnerUID,
-        plataforma: createActividadeDto.plataforma,
-        titulo: createActividadeDto.titulo,
-        fechaActividad: new Date(createActividadeDto.fechaActividad),
-        DistanciaKM: createActividadeDto.DistanciaKM,
-        RitmoMinKm: createActividadeDto.RitmoMinKm,
-        Duracion: createActividadeDto.Duracion,
-        Origen: createActividadeDto.Origen,
-        Ciudad: createActividadeDto.Ciudad,
-        Pais: createActividadeDto.Pais,
-        enlace: createActividadeDto.enlace,
-      },
+    // Crear la actividad y sus registros relacionados en una transacción
+    const resultado = await this.prisma.$transaction(async (tx) => {
+      // Crear la actividad
+      const actividad = await tx.actividades.create({
+        data: {
+          RunnerUID: createActividadeDto.RunnerUID,
+          plataforma: createActividadeDto.plataforma,
+          titulo: createActividadeDto.titulo,
+          fechaActividad: new Date(createActividadeDto.fechaActividad),
+          DistanciaKM: createActividadeDto.DistanciaKM,
+          RitmoMinKm: createActividadeDto.RitmoMinKm,
+          Duracion: createActividadeDto.Duracion,
+          Origen: createActividadeDto.Origen,
+          Ciudad: createActividadeDto.Ciudad,
+          Pais: createActividadeDto.Pais,
+          enlace: createActividadeDto.enlace,
+          fecha_inicio: createActividadeDto.fecha_inicio
+            ? new Date(createActividadeDto.fecha_inicio)
+            : null,
+          fecha_fin: createActividadeDto.fecha_fin
+            ? new Date(createActividadeDto.fecha_fin)
+            : null,
+          duracion_segundos: createActividadeDto.duracion_segundos,
+          duracion_formateada: createActividadeDto.duracion_formateada,
+          distancia: createActividadeDto.distancia,
+          ritmo: createActividadeDto.ritmo,
+          frecuencia_promedio: createActividadeDto.frecuencia_promedio,
+          frecuencia_maxima: createActividadeDto.frecuencia_maxima,
+          cadencia: createActividadeDto.cadencia,
+          calorias: createActividadeDto.calorias,
+          zona_activa: createActividadeDto.zona_activa,
+          tipo_actividad: createActividadeDto.tipo_actividad,
+          fecha_registro: new Date(),
+        },
+      });
+
+      // Crear puntos de ruta si se proporcionan
+      const rutasCreadas = [];
+      if (createActividadeDto.ruta && createActividadeDto.ruta.length > 0) {
+        for (const punto of createActividadeDto.ruta) {
+          const ruta = await tx.actividad_ruta.create({
+            data: {
+              actividad_id: actividad.actID,
+              punto_numero: punto.punto_numero,
+              latitud: punto.latitud,
+              longitud: punto.longitud,
+            },
+          });
+          rutasCreadas.push(ruta);
+        }
+      }
+
+      // Crear ubicación si se proporciona
+      let ubicacionCreada = null;
+      if (createActividadeDto.ubicacion) {
+        ubicacionCreada = await tx.actividad_ubicacion.create({
+          data: {
+            actividad_id: actividad.actID,
+            ciudad: createActividadeDto.ubicacion.ciudad,
+            inicio_lat: createActividadeDto.ubicacion.inicio_lat,
+            inicio_lon: createActividadeDto.ubicacion.inicio_lon,
+            fin_lat: createActividadeDto.ubicacion.fin_lat,
+            fin_lon: createActividadeDto.ubicacion.fin_lon,
+          },
+        });
+      }
+
+      // Crear zonas si se proporcionan
+      const zonasCreadas = [];
+      if (createActividadeDto.zonas && createActividadeDto.zonas.length > 0) {
+        for (const zona of createActividadeDto.zonas) {
+          const zonaCreada = await tx.actividad_zonas.create({
+            data: {
+              actividad_id: actividad.actID,
+              zona_numero: zona.zona_numero,
+              rango_texto: zona.rango_texto,
+              fue_activa: zona.fue_activa,
+            },
+          });
+          zonasCreadas.push(zonaCreada);
+        }
+      }
+
+      return {
+        actividad,
+        rutas: rutasCreadas,
+        ubicacion: ubicacionCreada,
+        zonas: zonasCreadas,
+      };
     });
+
+    const actividad = resultado.actividad;
 
     // Actualizar FechaUltimaActividad del usuario
     await this.prisma.sec_users.updateMany({
@@ -132,6 +208,9 @@ export class ActividadesService {
       message: 'Actividad creada exitosamente',
       status: 'success',
       actividad,
+      ruta: resultado.rutas.length > 0 ? resultado.rutas : null,
+      ubicacion: resultado.ubicacion,
+      zonas: resultado.zonas.length > 0 ? resultado.zonas : null,
       usuario: {
         RunnerUID: usuario.RunnerUID,
         name: usuario.name,
