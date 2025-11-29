@@ -53,9 +53,6 @@ export class ActividadesService {
         },
         take: 3,
         orderBy: { FechaEvento: 'asc' },
-        include: {
-          // Incluir datos del evento si es posible (aunque no hay relación directa en Prisma)
-        },
       }),
       // Total de puntos en zonas
       this.prisma.zonas.aggregate({
