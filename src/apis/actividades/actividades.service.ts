@@ -361,7 +361,7 @@ export class ActividadesService {
         RunnerUID: {
           in: runnerUIDsSeguidos,
         },
-        Publico: true,
+        Public: true,
       },
     });
 
@@ -551,7 +551,7 @@ export class ActividadesService {
     // Obtener el total para la paginación
     const total = await this.prisma.actividades.count({
       where: {
-        Publico: true,
+        Public: true,
       },
     });
 
@@ -739,7 +739,7 @@ export class ActividadesService {
       where: {
         RunnerUID: runneruid,
       },
-      data: { Publico: publico },
+      data: { Public: publico },
     });
 
     return {
