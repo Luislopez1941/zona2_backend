@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { ZonasService } from './zonas.service';
 import { CreateZonaDto } from './dto/create-zona.dto';
 import { UpdateZonaDto } from './dto/update-zona.dto';
@@ -12,9 +12,16 @@ export class ZonasController {
     return this.zonasService.create(createZonaDto);
   }
 
+  // Obtener todas las zonas de un usuario (las que recibió)
   @Get()
-  findAll() {
-    return this.zonasService.findAll();
+  findAll(@Query('runnerUID') runnerUID: string) {
+    if (!runnerUID) {
+      return {
+        message: 'El parámetro runnerUID es requerido',
+        status: 'error',
+      };
+    }
+    return this.zonasService.findByRunnerUID(runnerUID);
   }
 
   @Get(':id')

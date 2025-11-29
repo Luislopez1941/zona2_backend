@@ -128,14 +128,16 @@ model Followers {
 model zonas {
   zonaID       Int      @id @default(autoincrement())
   RunnerUID    String   @db.VarChar(36)
-  RunnerUIDRef String?   @db.VarChar(36)
+  RunnerUIDRef String?  @db.VarChar(36)
   puntos       Int
   motivo       String   @db.Char(2)
   origen       String   @db.Char(2)
   fecha        DateTime @db.DateTime(0)
+  mensaje      String?  @db.VarChar(255)  // Nuevo campo opcional para mensaje
 
   @@map("zonas")
 }
+
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model establecimientos {
