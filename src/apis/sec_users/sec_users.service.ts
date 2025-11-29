@@ -265,6 +265,26 @@ export class SecUsersService {
           },
         });
 
+        // Crear suscripción para el nuevo usuario
+        const subscriptionUID = randomUUID();
+        await tx.subscriptions.create({
+          data: {
+            SubscriptionUID: subscriptionUID,
+            RunnerUID: runnerUID,
+            PlanCode: 'Runner',
+            PlanVersion: 1,
+            BillingCycle: 'Yearly',
+            Status: 'Pending',
+            StartAt: new Date(),
+            EndAt: null, // NULL para pre-registro con Status Pending
+            NextChargeAt: null, // NULL para pre-registro con Status Pending
+            Currency: 'MXN',
+            PriceMXN: suscripcionInicial,
+            AutoRenew: true,
+            // Los demás campos opcionales se dejan como null (defaults de Prisma)
+          },
+        });
+
         return newUser;
       });
 
