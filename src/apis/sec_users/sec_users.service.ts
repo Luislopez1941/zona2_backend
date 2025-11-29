@@ -65,6 +65,22 @@ export class SecUsersService {
   }
 
   /**
+   * Genera SubscriptionUID con formato: # + 6 números (0-9) + 3 letras (A-Z)
+   * Ejemplo: #907481YEX
+   */
+  private generateSubscriptionUID(): string {
+    // Genera 6 números aleatorios entre 0 y 9
+    const nums = Array.from({ length: 6 }, () => Math.floor(Math.random() * 10)).join('');
+    
+    // Genera 3 letras aleatorias (A-Z)
+    const char1 = String.fromCharCode(Math.floor(Math.random() * 26) + 65);
+    const char2 = String.fromCharCode(Math.floor(Math.random() * 26) + 65);
+    const char3 = String.fromCharCode(Math.floor(Math.random() * 26) + 65);
+    
+    return `#${nums}${char1}${char2}${char3}`;
+  }
+
+  /**
    * Genera una contraseña y la hashea con SHA1
    */
   private generateDefaultPassword(): string {
@@ -266,7 +282,7 @@ export class SecUsersService {
         });
 
         // Crear suscripción para el nuevo usuario
-        const subscriptionUID = randomUUID();
+        const subscriptionUID = this.generateSubscriptionUID();
         await tx.subscriptions.create({
           data: {
             SubscriptionUID: subscriptionUID,
