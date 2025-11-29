@@ -257,7 +257,7 @@ export class SecUsersService {
         await tx.zonas.create({
           data: {
             RunnerUID: runnerUID,
-            RunnerUIDRef: null,
+            RunnerUIDRef: '', // Cadena vacía ya que la BD no permite null
             puntos: puntosIniciales,
             motivo: 'R',
             origen: '3',
