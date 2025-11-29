@@ -15,11 +15,12 @@ import { PaisesModule } from './apis/paises/paises.module';
 import { CiudadesMexicoModule } from './apis/ciudades_mexico/ciudades_mexico.module';
 import { EquiposModule } from './apis/equipos/equipos.module';
 import { PecersModule } from './apis/pecers/pecers.module';
-import { FolloersModule } from './apis/folloers/folloers.module';
+import { FollowersModule } from './apis/followers/followers.module';
+import { NotificacionesModule } from './apis/notificaciones/notificaciones.module';
 
 
 @Module({
-  imports: [PrismaModule, SmsModule, SecUsersModule, ActividadesModule, ZonasModule, EstablecimientosModule, LoginModule, EventosModule, PromocionesModule, EstadosMexicoModule, PaisesModule, CiudadesMexicoModule, EquiposModule, PecersModule, FolloersModule],
+  imports: [PrismaModule, SmsModule, SecUsersModule, ActividadesModule, ZonasModule, EstablecimientosModule, LoginModule, EventosModule, PromocionesModule, EstadosMexicoModule, PaisesModule, CiudadesMexicoModule, EquiposModule, PecersModule, FollowersModule, NotificacionesModule],
   controllers: [AppController],
   providers: [AppService],
 })

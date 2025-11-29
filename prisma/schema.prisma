@@ -41,6 +41,22 @@ model actividades {
   @@map("actividades")
 }
 
+model Notificaciones {
+  id             Int      @id @default(autoincrement())
+  toRunnerUID    String   @db.Char(36)
+  fromRunnerUID  String   @db.Char(36)
+  tipo           String   @db.VarChar(50)
+  mensaje        String?  @db.VarChar(255)
+  leida          Boolean  @default(false)
+  fecha          DateTime @default(now())
+
+  @@map("notificaciones")
+  @@unique([toRunnerUID, fromRunnerUID, tipo])
+  @@index([toRunnerUID])
+  @@index([fromRunnerUID])
+}
+
+
 model sec_users {
   RunnerUID                String    @default(uuid()) @db.Char(36)
   RunnerUIDRef             String?   @db.Char(36)

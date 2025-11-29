@@ -1,9 +1,8 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateFolloerDto } from './dto/create-folloer.dto';
 
 @Injectable()
-export class FolloersService {
+export class FollowersService {
   constructor(private readonly prisma: PrismaService) {}
 
   async follow(follower_runnerUID: string, followed_runnerUID: string) {
