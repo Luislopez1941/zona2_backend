@@ -285,6 +285,48 @@ export class ActividadesService {
     };
   }
 
+  async findByRunnerUID(runneruid: string) {
+    // Verificar que el usuario existe
+    const usuario = await this.prisma.sec_users.findFirst({
+      where: { RunnerUID: runneruid },
+    });
+
+    if (!usuario) {
+      throw new NotFoundException(
+        `Usuario con RunnerUID ${runneruid} no encontrado`,
+      );
+    }
+
+    // Obtener todas las actividades del usuario con sus relaciones
+    const actividades = await this.prisma.actividades.findMany({
+      where: { RunnerUID: runneruid },
+      include: {
+        actividad_ruta: {
+          orderBy: {
+            punto_numero: 'asc',
+          },
+        },
+        actividad_ubicacion: true,
+        actividad_zonas: {
+          orderBy: {
+            zona_numero: 'asc',
+          },
+        },
+      },
+      orderBy: {
+        fechaActividad: 'desc',
+      },
+    });
+
+    return {
+      message: 'Actividades obtenidas exitosamente',
+      status: 'success',
+      total: actividades.length,
+      runneruid,
+      actividades,
+    };
+  }
+
   async findAll() {
     const actividades = await this.prisma.actividades.findMany({
       orderBy: {
