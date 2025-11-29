@@ -7,7 +7,7 @@ import { UpdateZonaDto } from './dto/update-zona.dto';
 export class ZonasController {
   constructor(private readonly zonasService: ZonasService) {}
 
-  @Post()
+  @Post('create')
   create(@Body() createZonaDto: CreateZonaDto) {
     return this.zonasService.create(createZonaDto);
   }

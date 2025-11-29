@@ -37,6 +37,7 @@ model actividades {
   actividad_ruta      actividad_ruta[]
   actividad_ubicacion actividad_ubicacion[]
   actividad_zonas     actividad_zonas[]
+  zonas_actividades   zonas_actividades[]
 
   @@map("actividades")
 }
@@ -437,6 +438,23 @@ model actividad_zonas {
   actividades  actividades @relation(fields: [actividad_id], references: [actID], onDelete: Cascade, onUpdate: Restrict, map: "actividad_zonas_ibfk_1")
 
   @@index([actividad_id], map: "actividad_id")
+}
+
+// Tabla para registrar las zonas que los usuarios dan a las actividades/publicaciones
+model zonas_actividades {
+  id            Int       @id @default(autoincrement())
+  RunnerUIDRef  String    @db.VarChar(36) // Usuario que da las zonas
+  actID         Int       // Actividad a la que se le dan las zonas
+  puntos        Int       // Cantidad de puntos otorgados
+  motivo        String    @default("R") @db.Char(2) // R de Runner
+  origen        String    @default("3") @db.Char(2) // Origen 3
+  fecha         DateTime  @default(now()) @db.DateTime(0)
+  actividades   actividades @relation(fields: [actID], references: [actID], onDelete: Cascade, onUpdate: Restrict)
+
+  @@unique([RunnerUIDRef, actID]) // Evita que el mismo usuario dé zonas a la misma actividad más de una vez
+  @@index([RunnerUIDRef])
+  @@index([actID])
+  @@map("zonas_actividades")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments

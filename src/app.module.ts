@@ -17,10 +17,11 @@ import { EquiposModule } from './apis/equipos/equipos.module';
 import { PecersModule } from './apis/pecers/pecers.module';
 import { FollowersModule } from './apis/followers/followers.module';
 import { NotificacionesModule } from './apis/notificaciones/notificaciones.module';
+import { ZonasActividadesModule } from './apis/zonas_actividades/zonas_actividades.module';
 
 
 @Module({
-  imports: [PrismaModule, SmsModule, SecUsersModule, ActividadesModule, ZonasModule, EstablecimientosModule, LoginModule, EventosModule, PromocionesModule, EstadosMexicoModule, PaisesModule, CiudadesMexicoModule, EquiposModule, PecersModule, FollowersModule, NotificacionesModule],
+  imports: [PrismaModule, SmsModule, SecUsersModule, ActividadesModule, ZonasModule, EstablecimientosModule, LoginModule, EventosModule, PromocionesModule, EstadosMexicoModule, PaisesModule, CiudadesMexicoModule, EquiposModule, PecersModule, FollowersModule, NotificacionesModule, ZonasActividadesModule],
   controllers: [AppController],
   providers: [AppService],
 })
