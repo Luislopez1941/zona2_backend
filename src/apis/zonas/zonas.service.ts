@@ -12,7 +12,7 @@ export class ZonasService {
   }
 
   // Obtener todas las zonas que recibió un usuario
-  async findByRunnerUID(runnerUID: string) {
+  async findByRunnerUID(runnerUID: string, currentUser?: string) {
     // Verificar que el usuario existe
     const usuario = await this.prisma.sec_users.findFirst({
       where: { RunnerUID: runnerUID },
