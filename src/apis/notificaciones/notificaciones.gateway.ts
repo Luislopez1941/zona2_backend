@@ -10,8 +10,12 @@ import { Server, Socket } from 'socket.io';
   cors: {
     origin: true,
     credentials: true,
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   },
   namespace: '/notificaciones',
+  transports: ['websocket', 'polling'],
+  allowEIO3: true,
 })
 export class NotificacionesGateway
   implements OnGatewayConnection, OnGatewayDisconnect

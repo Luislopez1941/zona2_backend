@@ -19,16 +19,21 @@ yarn add socket.io-client
 ```typescript
 import { io } from 'socket.io-client';
 
-// Conectar al servidor de notificaciones
-// Reemplaza 'http://localhost:4000' con la URL de tu backend
-const socket = io('http://localhost:4000/notificaciones', {
+// IMPORTANTE: La URL debe ser la base del servidor, el namespace se agrega automáticamente
+// Para producción: 'https://zona2.mx' (sin /notificaciones en la URL base)
+// Para desarrollo: 'http://localhost:4000' (sin /notificaciones en la URL base)
+
+const socket = io('https://zona2.mx/notificaciones', {
+  // O para desarrollo: io('http://localhost:4000/notificaciones', {
   query: {
     runnerUID: 'TU_RUNNER_UID_AQUI' // El RunnerUID del usuario autenticado
   },
   transports: ['websocket', 'polling'],
   reconnection: true,
   reconnectionDelay: 1000,
-  reconnectionAttempts: 5
+  reconnectionAttempts: 5,
+  path: '/socket.io/', // Ruta por defecto de Socket.IO
+  forceNew: false,
 });
 ```
 
