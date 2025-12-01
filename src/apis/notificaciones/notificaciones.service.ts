@@ -1,11 +1,16 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateNotificacioneDto } from './dto/create-notificacione.dto';
 import { UpdateNotificacioneDto } from './dto/update-notificacione.dto';
+import { NotificacionesGateway } from './notificaciones.gateway';
 
 @Injectable()
 export class NotificacionesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => NotificacionesGateway))
+    private readonly notificacionesGateway: NotificacionesGateway,
+  ) {}
 
   async create(createNotificacioneDto: CreateNotificacioneDto) {
     // Verificar que el usuario que recibe existe
@@ -50,6 +55,20 @@ export class NotificacionesService {
         },
       });
 
+      // Emitir notificación por Socket.IO
+      this.notificacionesGateway.emitNotification(
+        createNotificacioneDto.toRunnerUID,
+        {
+          id: updated.id,
+          toRunnerUID: updated.toRunnerUID,
+          fromRunnerUID: updated.fromRunnerUID,
+          tipo: updated.tipo,
+          mensaje: updated.mensaje,
+          leida: updated.leida,
+          fecha: updated.fecha,
+        },
+      );
+
       return {
         message: 'Notificación actualizada exitosamente',
         status: 'success',
@@ -67,6 +86,20 @@ export class NotificacionesService {
         leida: false,
       },
     });
+
+    // Emitir notificación por Socket.IO
+    this.notificacionesGateway.emitNotification(
+      createNotificacioneDto.toRunnerUID,
+      {
+        id: notificacion.id,
+        toRunnerUID: notificacion.toRunnerUID,
+        fromRunnerUID: notificacion.fromRunnerUID,
+        tipo: notificacion.tipo,
+        mensaje: notificacion.mensaje,
+        leida: notificacion.leida,
+        fecha: notificacion.fecha,
+      },
+    );
 
     return {
       message: 'Notificación creada exitosamente',

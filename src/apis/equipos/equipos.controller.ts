@@ -18,9 +18,24 @@ export class EquiposController {
     return this.equiposService.joinATeam(joinATeamDto);
   }
 
-  @Get()
+  @Get('get-all')
   findAll() {
     return this.equiposService.findAll();
+  }
+
+  @Get('by-ciudad/:ciudad')
+  findByCiudad(@Param('ciudad') ciudad: string) {
+    return this.equiposService.findByCiudad(ciudad);
+  }
+
+  @Get('by-estado/:estado')
+  findByEstado(@Param('estado') estado: string) {
+    return this.equiposService.findByEstado(estado);
+  }
+
+  @Get('by-runner/:runnerUID')
+  findByRunnerUID(@Param('runnerUID') runnerUID: string) {
+    return this.equiposService.findByRunnerUID(runnerUID);
   }
 
   @Get(':id')

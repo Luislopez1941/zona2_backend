@@ -80,8 +80,7 @@ interface RequestWithUser extends Request {
       verifyRecoveryCodeDto.code,
     );
   }
-
-  @Post('reset-password')
+ @Post('reset-password')
   resetPassword(@Body() resetPasswordDto: ChangePasswordDto) {
     // Usar login si está presente, sino usar phone
     const identifier = resetPasswordDto.login || resetPasswordDto.phone;
@@ -105,6 +104,7 @@ interface RequestWithUser extends Request {
     // password es la nueva contraseña que envía el frontend
     return this.secUsersService.changePassword(identifier, resetPasswordDto.code, resetPasswordDto.password);
   }
+ 
 
   // @Patch(':login')
   // update(@Param('login') login: string, @Body() updateSecUserDto: UpdateSecUserDto) {
@@ -119,5 +119,17 @@ interface RequestWithUser extends Request {
   @Delete(':login')
   remove(@Param('login') login: string) {
     return this.secUsersService.remove(login);
+  }
+
+  // Obtener cantidad de referidos de un usuario
+  @Get('referidos/:runnerUID')
+  getReferidosCount(@Param('runnerUID') runnerUID: string) {
+    return this.secUsersService.getReferidosCount(runnerUID);
+  }
+
+  // Obtener ganancias totales de los referidos
+  @Get('ganancias-referidos/:runnerUID')
+  getGananciasReferidos(@Param('runnerUID') runnerUID: string) {
+    return this.secUsersService.getGananciasReferidos(runnerUID);
   }
 }

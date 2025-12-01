@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SmsService } from '../../common/services/sms.service';
+import { NotificacionesService } from '../notificaciones/notificaciones.service';
 import { CreateSecUserDto } from './dto/create-sec_user.dto';
 import { UpdateSecUserDto } from './dto/update-sec_user.dto';
 import { CreateOrganizadorDto } from './dto/create-organizador.dto';
@@ -13,6 +14,8 @@ export class SecUsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly smsService: SmsService,
+    @Inject(forwardRef(() => NotificacionesService))
+    private readonly notificacionesService: NotificacionesService,
   ) {}
 
   /**
@@ -258,13 +261,25 @@ export class SecUsersService {
         });
 
         // Si hay referidor, asignar 500 puntos en WalletPuntos al referidor
-        if (referidor) {
+        if (referidor && finalRunnerUIDRef) {
           const nuevosPuntosReferidor = (referidor.WalletPuntos || 0) + puntosReferidor;
           
           await tx.sec_users.update({
             where: { login: referidor.login },
             data: {
               WalletPuntos: nuevosPuntosReferidor,
+            },
+          });
+
+          // Crear registro en zonas para el referidor
+          await tx.zonas.create({
+            data: {
+              RunnerUID: finalRunnerUIDRef, // El referidor recibe los puntos
+              RunnerUIDRef: runnerUID, // El nuevo usuario es la referencia
+              puntos: puntosReferidor, // 500 puntos por referido
+              motivo: 'R',
+              origen: '3',
+              fecha: new Date(),
             },
           });
         }
@@ -304,8 +319,23 @@ export class SecUsersService {
         return newUser;
       });
 
+      // Crear notificación para el referidor si existe
+      if (referidor && finalRunnerUIDRef) {
+        try {
+          await this.notificacionesService.create({
+            toRunnerUID: finalRunnerUIDRef, // El referidor recibe la notificación
+            fromRunnerUID: runnerUID, // El nuevo usuario es quien envía
+            tipo: 'nuevo_referido',
+            mensaje: `Un nuevo usuario se registró con tu código de referido y recibiste ${puntosReferidor} puntos`,
+          });
+        } catch (error) {
+          // Si falla la notificación, no afecta el registro del usuario
+          console.error('Error al crear notificación para referidor:', error);
+        }
+      }
+
       return {
-        message: 'Pre-registro exitoso',
+        message: 'Registro exitoso',
         status: 'success',
         user: user,
       };
@@ -1386,5 +1416,111 @@ export class SecUsersService {
       }
       throw error;
     }
+  }
+
+  /**
+   * Obtiene la cantidad de referidos que tiene un usuario
+   * Cuenta cuántos usuarios tienen ese RunnerUID como su RunnerUIDRef
+   */
+  async getReferidosCount(runnerUID: string) {
+    // Verificar que el usuario existe
+    const usuario = await this.prisma.sec_users.findFirst({
+      where: { RunnerUID: runnerUID },
+    });
+
+    if (!usuario) {
+      throw new NotFoundException(
+        `Usuario con RunnerUID ${runnerUID} no encontrado`,
+      );
+    }
+
+    // Contar cuántos usuarios tienen este RunnerUID como su RunnerUIDRef
+    const count = await this.prisma.sec_users.count({
+      where: {
+        RunnerUIDRef: runnerUID,
+      },
+    });
+
+    return {
+      message: 'Cantidad de referidos obtenida exitosamente',
+      status: 'success',
+      runnerUID,
+      totalReferidos: count,
+    };
+  }
+
+  /**
+   * Obtiene las ganancias totales de los referidos de un usuario
+   * Suma todos los puntos que ha recibido por referidos en la tabla zonas
+   */
+  async getGananciasReferidos(runnerUID: string) {
+    // Verificar que el usuario existe
+    const usuario = await this.prisma.sec_users.findFirst({
+      where: { RunnerUID: runnerUID },
+    });
+
+    if (!usuario) {
+      throw new NotFoundException(
+        `Usuario con RunnerUID ${runnerUID} no encontrado`,
+      );
+    }
+
+    // Obtener todos los referidos del usuario
+    const referidos = await this.prisma.sec_users.findMany({
+      where: {
+        RunnerUIDRef: runnerUID,
+      },
+      select: {
+        RunnerUID: true,
+      },
+    });
+
+    const referidosRunnerUIDs = referidos.map((r) => r.RunnerUID);
+
+    // Si no tiene referidos, retornar 0
+    if (referidosRunnerUIDs.length === 0) {
+      return {
+        message: 'Ganancias de referidos obtenidas exitosamente',
+        status: 'success',
+        runnerUID,
+        totalReferidos: 0,
+        gananciasTotales: 0,
+        puntosPorReferido: 500,
+      };
+    }
+
+    // Buscar todos los registros en zonas donde el referidor recibió puntos por estos referidos
+    const zonasReferidos = await this.prisma.zonas.findMany({
+      where: {
+        RunnerUID: runnerUID, // El referidor
+        RunnerUIDRef: {
+          in: referidosRunnerUIDs, // Que sean sus referidos
+        },
+        motivo: 'R',
+        origen: '3',
+      },
+      select: {
+        puntos: true,
+      },
+    });
+
+    // Sumar todos los puntos
+    const gananciasTotales = zonasReferidos.reduce(
+      (sum, zona) => sum + zona.puntos,
+      0,
+    );
+
+    return {
+      message: 'Ganancias de referidos obtenidas exitosamente',
+      status: 'success',
+      runnerUID,
+      totalReferidos: referidos.length,
+      gananciasTotales,
+      puntosPorReferido: 500,
+      detalle: {
+        registrosEnZonas: zonasReferidos.length,
+        puntosTotales: gananciasTotales,
+      },
+    };
   }
 }

@@ -154,4 +154,73 @@ export class EquiposService {
       equipo: equipoActualizado,
     };
   }
+
+  /**
+   * Obtiene equipos por ciudad
+   */
+  async findByCiudad(ciudad: string) {
+    const equipos = await this.prisma.equipos.findMany({
+      where: {
+        Ciudad: ciudad,
+        Activo: true,
+      },
+      orderBy: {
+        NombreEquipo: 'asc',
+      },
+    });
+
+    return {
+      message: 'Equipos obtenidos exitosamente',
+      status: 'success',
+      total: equipos.length,
+      ciudad,
+      equipos,
+    };
+  }
+
+  /**
+   * Obtiene equipos por estado
+   */
+  async findByEstado(estado: string) {
+    const equipos = await this.prisma.equipos.findMany({
+      where: {
+        Estado: estado,
+        Activo: true,
+      },
+      orderBy: {
+        NombreEquipo: 'asc',
+      },
+    });
+
+    return {
+      message: 'Equipos obtenidos exitosamente',
+      status: 'success',
+      total: equipos.length,
+      estado,
+      equipos,
+    };
+  }
+
+  /**
+   * Obtiene equipos por RunnerUID del dueño
+   */
+  async findByRunnerUID(runnerUID: string) {
+    const equipos = await this.prisma.equipos.findMany({
+      where: {
+        RunnerUID: runnerUID,
+        Activo: true,
+      },
+      orderBy: {
+        NombreEquipo: 'asc',
+      },
+    });
+
+    return {
+      message: 'Equipos obtenidos exitosamente',
+      status: 'success',
+      total: equipos.length,
+      runnerUID,
+      equipos,
+    };
+  }
 }
