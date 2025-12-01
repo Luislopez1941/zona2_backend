@@ -23,8 +23,13 @@ import { io } from 'socket.io-client';
 // Para producción: 'https://zona2.mx' (sin /notificaciones en la URL base)
 // Para desarrollo: 'http://localhost:4000' (sin /notificaciones en la URL base)
 
+// IMPORTANTE: Socket.IO usa el path /socket.io/ por defecto
+// El namespace se incluye en la URL: https://zona2.mx/notificaciones
+// Socket.IO internamente usará: https://zona2.mx/socket.io/?EIO=4&transport=polling&ns=/notificaciones
+
 const socket = io('https://zona2.mx/notificaciones', {
   // O para desarrollo: io('http://localhost:4000/notificaciones', {
+  path: '/socket.io/', // Ruta por defecto de Socket.IO (REQUERIDO para que funcione)
   query: {
     runnerUID: 'TU_RUNNER_UID_AQUI' // El RunnerUID del usuario autenticado
   },
@@ -32,7 +37,6 @@ const socket = io('https://zona2.mx/notificaciones', {
   reconnection: true,
   reconnectionDelay: 1000,
   reconnectionAttempts: 5,
-  path: '/socket.io/', // Ruta por defecto de Socket.IO
   forceNew: false,
 });
 ```
