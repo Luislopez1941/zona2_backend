@@ -169,6 +169,29 @@ export class EquiposService {
   }
 
   /**
+   * Obtiene equipos por país
+   */
+  async findByPais(pais: string) {
+    const equipos = await this.prisma.equipos.findMany({
+      where: {
+        Pais: pais,
+        Activo: true,
+      },
+      orderBy: {
+        NombreEquipo: 'asc',
+      },
+    });
+
+    return {
+      message: 'Equipos obtenidos exitosamente',
+      status: 'success',
+      total: equipos.length,
+      pais,
+      equipos,
+    };
+  }
+
+  /**
    * Obtiene equipos por ciudad
    */
   async findByCiudad(ciudad: string) {

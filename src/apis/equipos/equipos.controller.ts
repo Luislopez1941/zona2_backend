@@ -8,19 +8,14 @@ import { JoinATeamDto } from './dto/join-a-team.dto';
 export class EquiposController {
   constructor(private readonly equiposService: EquiposService) {}
 
-  @Post()
+  @Post('create')
   create(@Body() createEquipoDto: CreateEquipoDto) {
     return this.equiposService.create(createEquipoDto);
   }
 
-  @Post('join-a-team')
-  joinATeam(@Body() joinATeamDto: JoinATeamDto) {
-    return this.equiposService.joinATeam(joinATeamDto);
-  }
-
-  @Get('get-all')
-  findAll() {
-    return this.equiposService.findAll();
+  @Get('by-pais/:pais')
+  findByPais(@Param('pais') pais: string) {
+    return this.equiposService.findByPais(pais);
   }
 
   @Get('by-ciudad/:ciudad')
@@ -32,6 +27,12 @@ export class EquiposController {
   findByEstado(@Param('estado') estado: string) {
     return this.equiposService.findByEstado(estado);
   }
+
+  @Get('get-all')
+  findAll() {
+    return this.equiposService.findAll();
+  }
+
 
   @Get('by-runner/:runnerUID')
   findByRunnerUID(@Param('runnerUID') runnerUID: string) {

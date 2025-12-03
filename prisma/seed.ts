@@ -9,7 +9,98 @@ async function main() {
   const eventosExistentes = await prisma.eventos.count();
   if (eventosExistentes > 0) {
     console.log(`⚠️  Ya existen ${eventosExistentes} eventos en la base de datos.`);
-    console.log('💡 Si deseas reemplazarlos, elimina los eventos existentes primero.');
+    console.log('💡 Actualizando eventos existentes con campos faltantes...');
+    
+    // Obtener todos los eventos existentes
+    const eventosParaActualizar = await prisma.eventos.findMany({
+      where: {
+        OR: [
+          { UrlRegistro: null },
+          { UrlPagoDirecto: null },
+          { MaxPuntosZ2: null },
+          { MaxDescuentoZ2: null },
+          { PuntosEquivalencia: null },
+          { DescuentoImporte: null },
+          { editCartaExoneracion: null },
+          { UrlCartaExoneracion: null },
+          { editGuiaExpectador: null },
+          { GuiaExpectador: null },
+          { imagen: null },
+          { UrlCalendario: null },
+        ],
+      },
+    });
+
+    if (eventosParaActualizar.length > 0) {
+      console.log(`📝 Actualizando ${eventosParaActualizar.length} eventos con campos faltantes...`);
+      
+      // Obtener un RunnerUID de ejemplo si existe
+      const usuarioEjemplo = await prisma.sec_users.findFirst();
+      const runnerUIDEjemplo = usuarioEjemplo?.RunnerUID || null;
+
+      for (const evento of eventosParaActualizar) {
+        const datosActualizacion: any = {};
+        
+        // Agregar campos faltantes con valores por defecto
+        const precioEvento = evento.PrecioEvento ? Number(evento.PrecioEvento) : 500;
+        
+        if (!evento.UrlRegistro) {
+          datosActualizacion.UrlRegistro = `https://zona2.mx/eventos/${evento.EventoID}/registro`;
+        }
+        if (!evento.UrlPagoDirecto) {
+          datosActualizacion.UrlPagoDirecto = `https://zona2.mx/pago/${evento.EventoID}`;
+        }
+        if (!evento.MaxPuntosZ2) {
+          datosActualizacion.MaxPuntosZ2 = Math.floor(precioEvento * 10);
+        }
+        if (!evento.MaxDescuentoZ2) {
+          datosActualizacion.MaxDescuentoZ2 = Math.floor(precioEvento / 10);
+        }
+        if (!evento.PuntosEquivalencia) {
+          datosActualizacion.PuntosEquivalencia = 100;
+        }
+        if (!evento.DescuentoImporte) {
+          datosActualizacion.DescuentoImporte = Math.floor(precioEvento / 10);
+        }
+        if (!evento.editCartaExoneracion) {
+          datosActualizacion.editCartaExoneracion = `Carta de exoneración de responsabilidad para ${evento.Titulo}. Los participantes asumen todos los riesgos asociados con la participación en este evento.`;
+        }
+        if (!evento.UrlCartaExoneracion) {
+          datosActualizacion.UrlCartaExoneracion = `https://zona2.mx/documentos/carta-exoneracion-${evento.EventoID}.pdf`;
+        }
+        if (!evento.editGuiaExpectador) {
+          datosActualizacion.editGuiaExpectador = `Guía completa para espectadores de ${evento.Titulo}. Puntos de observación, horarios, estacionamiento y recomendaciones.`;
+        }
+        if (!evento.GuiaExpectador) {
+          datosActualizacion.GuiaExpectador = `https://zona2.mx/documentos/guia-expectador-${evento.EventoID}.pdf`;
+        }
+        if (!evento.imagen) {
+          datosActualizacion.imagen = evento.UrlImagen || `https://ejemplo.com/imagenes/evento-${evento.EventoID}.jpg`;
+        }
+        if (!evento.UrlCalendario) {
+          datosActualizacion.UrlCalendario = `https://calendar.google.com/event?action=TEMPLATE&tmeid=evento${evento.EventoID}`;
+        }
+        if (!evento.RunnerUID && runnerUIDEjemplo) {
+          datosActualizacion.RunnerUID = runnerUIDEjemplo;
+        }
+        if (!evento.Internacional) {
+          datosActualizacion.Internacional = 'N';
+        }
+
+        if (Object.keys(datosActualizacion).length > 0) {
+          await prisma.eventos.update({
+            where: { EventoID: evento.EventoID },
+            data: datosActualizacion,
+          });
+        }
+      }
+      
+      console.log(`✅ ${eventosParaActualizar.length} eventos actualizados exitosamente.`);
+    } else {
+      console.log('✅ Todos los eventos ya tienen todos los campos completos.');
+    }
+    
+    console.log('💡 Si deseas crear nuevos eventos, elimina los eventos existentes primero.');
     return;
   }
 
@@ -35,13 +126,19 @@ async function main() {
     console.log(`✅ Organizador creado con ID: ${organizador.OrgID}`);
   }
 
-  // Crear eventos de ejemplo con acentos (UTF-8)
+  // Obtener un RunnerUID de ejemplo si existe
+  const usuarioEjemplo = await prisma.sec_users.findFirst();
+  const runnerUIDEjemplo = usuarioEjemplo?.RunnerUID || null;
+
+  // Crear eventos de ejemplo con acentos (UTF-8) - COMPLETOS con todos los campos
   const eventos = [
     {
       OrgID: organizador.OrgID,
+      RunnerUID: runnerUIDEjemplo,
       Titulo: 'Maratón de Mérida 2024',
-      Subtitulo: 'Carrera por las calles históricas de Mérida',
+      Subtitulo: 'Carrera por las calles históricas de Mérida. Únete a la carrera más importante de la Península de Yucatán.',
       TipoEvento: 'Carrera',
+      Internacional: 'N',
       Distancias: '5K, 10K, 21K, 42K',
       Categorias: 'Libre, Veteranos, Juvenil',
       FechaEvento: new Date('2024-12-15'),
@@ -51,16 +148,30 @@ async function main() {
       Pais: 'México',
       Lugar: 'Centro Histórico de Mérida',
       UrlMapa: 'https://maps.google.com/merida',
-      UrlImagen: 'https://ejemplo.com/imagen1.jpg',
+      UrlCalendario: 'https://calendar.google.com/event?action=TEMPLATE&tmeid=abc123',
+      imagen: 'https://ejemplo.com/imagenes/maraton-merida-2024.jpg',
+      UrlImagen: 'https://ejemplo.com/imagenes/maraton-merida-2024.jpg',
+      UrlRegistro: 'https://zona2.mx/eventos/maraton-merida-2024/registro',
+      UrlPagoDirecto: 'https://zona2.mx/pago/maraton-merida-2024',
+      MaxPuntosZ2: 5000,
+      MaxDescuentoZ2: 50,
+      PuntosEquivalencia: 100,
+      DescuentoImporte: 50.00,
+      editCartaExoneracion: 'Carta de exoneración de responsabilidad para el Maratón de Mérida 2024. Los participantes asumen todos los riesgos...',
+      UrlCartaExoneracion: 'https://zona2.mx/documentos/carta-exoneracion-maraton-merida.pdf',
+      editGuiaExpectador: 'Guía completa para espectadores del Maratón de Mérida 2024. Puntos de observación, horarios, estacionamiento...',
+      GuiaExpectador: 'https://zona2.mx/documentos/guia-expectador-maraton-merida.pdf',
       PrecioEvento: 500.00,
       Moneda: 'MXN',
       Estatus: 'publicado',
     },
     {
       OrgID: organizador.OrgID,
+      RunnerUID: runnerUIDEjemplo,
       Titulo: 'Carrera del Día de la Independencia',
-      Subtitulo: 'Celebra la independencia corriendo',
+      Subtitulo: 'Celebra la independencia corriendo por las hermosas playas de Cancún',
       TipoEvento: 'Carrera',
+      Internacional: 'N',
       Distancias: '5K, 10K',
       Categorias: 'Libre',
       FechaEvento: new Date('2024-09-16'),
@@ -70,16 +181,30 @@ async function main() {
       Pais: 'México',
       Lugar: 'Playa Delfines',
       UrlMapa: 'https://maps.google.com/cancun',
-      UrlImagen: 'https://ejemplo.com/imagen2.jpg',
+      UrlCalendario: 'https://calendar.google.com/event?action=TEMPLATE&tmeid=def456',
+      imagen: 'https://ejemplo.com/imagenes/carrera-independencia-cancun.jpg',
+      UrlImagen: 'https://ejemplo.com/imagenes/carrera-independencia-cancun.jpg',
+      UrlRegistro: 'https://zona2.mx/eventos/carrera-independencia/registro',
+      UrlPagoDirecto: 'https://zona2.mx/pago/carrera-independencia',
+      MaxPuntosZ2: 3000,
+      MaxDescuentoZ2: 30,
+      PuntosEquivalencia: 100,
+      DescuentoImporte: 30.00,
+      editCartaExoneracion: 'Carta de exoneración de responsabilidad para la Carrera del Día de la Independencia.',
+      UrlCartaExoneracion: 'https://zona2.mx/documentos/carta-exoneracion-independencia.pdf',
+      editGuiaExpectador: 'Guía para espectadores de la Carrera del Día de la Independencia en Cancún.',
+      GuiaExpectador: 'https://zona2.mx/documentos/guia-expectador-independencia.pdf',
       PrecioEvento: 400.00,
       Moneda: 'MXN',
       Estatus: 'publicado',
     },
     {
       OrgID: organizador.OrgID,
+      RunnerUID: runnerUIDEjemplo,
       Titulo: 'Maratón Internacional de la Ciudad de México',
-      Subtitulo: 'La carrera más importante de la capital',
+      Subtitulo: 'La carrera más importante de la capital. Evento internacional con corredores de todo el mundo.',
       TipoEvento: 'Carrera',
+      Internacional: 'S',
       Distancias: '10K, 21K, 42K',
       Categorias: 'Libre, Élite, Veteranos',
       FechaEvento: new Date('2024-11-10'),
@@ -89,16 +214,30 @@ async function main() {
       Pais: 'México',
       Lugar: 'Bosque de Chapultepec',
       UrlMapa: 'https://maps.google.com/cdmx',
-      UrlImagen: 'https://ejemplo.com/imagen3.jpg',
+      UrlCalendario: 'https://calendar.google.com/event?action=TEMPLATE&tmeid=ghi789',
+      imagen: 'https://ejemplo.com/imagenes/maraton-cdmx-2024.jpg',
+      UrlImagen: 'https://ejemplo.com/imagenes/maraton-cdmx-2024.jpg',
+      UrlRegistro: 'https://zona2.mx/eventos/maraton-cdmx-2024/registro',
+      UrlPagoDirecto: 'https://zona2.mx/pago/maraton-cdmx-2024',
+      MaxPuntosZ2: 10000,
+      MaxDescuentoZ2: 100,
+      PuntosEquivalencia: 100,
+      DescuentoImporte: 100.00,
+      editCartaExoneracion: 'Carta de exoneración de responsabilidad para el Maratón Internacional de la Ciudad de México 2024.',
+      UrlCartaExoneracion: 'https://zona2.mx/documentos/carta-exoneracion-maraton-cdmx.pdf',
+      editGuiaExpectador: 'Guía completa para espectadores del Maratón Internacional de la Ciudad de México.',
+      GuiaExpectador: 'https://zona2.mx/documentos/guia-expectador-maraton-cdmx.pdf',
       PrecioEvento: 800.00,
       Moneda: 'MXN',
       Estatus: 'publicado',
     },
     {
       OrgID: organizador.OrgID,
+      RunnerUID: runnerUIDEjemplo,
       Titulo: 'Carrera Nocturna de Guadalajara',
-      Subtitulo: 'Corre bajo las estrellas en Guadalajara',
+      Subtitulo: 'Corre bajo las estrellas en Guadalajara. Una experiencia única en la Perla Tapatía.',
       TipoEvento: 'Carrera',
+      Internacional: 'N',
       Distancias: '5K, 10K',
       Categorias: 'Libre',
       FechaEvento: new Date('2024-10-20'),
@@ -108,16 +247,30 @@ async function main() {
       Pais: 'México',
       Lugar: 'Centro de Guadalajara',
       UrlMapa: 'https://maps.google.com/guadalajara',
-      UrlImagen: 'https://ejemplo.com/imagen4.jpg',
+      UrlCalendario: 'https://calendar.google.com/event?action=TEMPLATE&tmeid=jkl012',
+      imagen: 'https://ejemplo.com/imagenes/carrera-nocturna-guadalajara.jpg',
+      UrlImagen: 'https://ejemplo.com/imagenes/carrera-nocturna-guadalajara.jpg',
+      UrlRegistro: 'https://zona2.mx/eventos/carrera-nocturna-guadalajara/registro',
+      UrlPagoDirecto: 'https://zona2.mx/pago/carrera-nocturna-guadalajara',
+      MaxPuntosZ2: 2500,
+      MaxDescuentoZ2: 25,
+      PuntosEquivalencia: 100,
+      DescuentoImporte: 25.00,
+      editCartaExoneracion: 'Carta de exoneración de responsabilidad para la Carrera Nocturna de Guadalajara.',
+      UrlCartaExoneracion: 'https://zona2.mx/documentos/carta-exoneracion-nocturna-gdl.pdf',
+      editGuiaExpectador: 'Guía para espectadores de la Carrera Nocturna de Guadalajara.',
+      GuiaExpectador: 'https://zona2.mx/documentos/guia-expectador-nocturna-gdl.pdf',
       PrecioEvento: 350.00,
       Moneda: 'MXN',
       Estatus: 'publicado',
     },
     {
       OrgID: organizador.OrgID,
+      RunnerUID: runnerUIDEjemplo,
       Titulo: 'Maratón de Monterrey',
-      Subtitulo: 'Desafía las montañas de Monterrey',
+      Subtitulo: 'Desafía las montañas de Monterrey. La carrera más desafiante del norte de México.',
       TipoEvento: 'Carrera',
+      Internacional: 'N',
       Distancias: '10K, 21K, 42K',
       Categorias: 'Libre, Veteranos',
       FechaEvento: new Date('2024-12-01'),
@@ -127,16 +280,30 @@ async function main() {
       Pais: 'México',
       Lugar: 'Parque Fundidora',
       UrlMapa: 'https://maps.google.com/monterrey',
-      UrlImagen: 'https://ejemplo.com/imagen5.jpg',
+      UrlCalendario: 'https://calendar.google.com/event?action=TEMPLATE&tmeid=mno345',
+      imagen: 'https://ejemplo.com/imagenes/maraton-monterrey-2024.jpg',
+      UrlImagen: 'https://ejemplo.com/imagenes/maraton-monterrey-2024.jpg',
+      UrlRegistro: 'https://zona2.mx/eventos/maraton-monterrey-2024/registro',
+      UrlPagoDirecto: 'https://zona2.mx/pago/maraton-monterrey-2024',
+      MaxPuntosZ2: 6000,
+      MaxDescuentoZ2: 60,
+      PuntosEquivalencia: 100,
+      DescuentoImporte: 60.00,
+      editCartaExoneracion: 'Carta de exoneración de responsabilidad para el Maratón de Monterrey 2024.',
+      UrlCartaExoneracion: 'https://zona2.mx/documentos/carta-exoneracion-maraton-mty.pdf',
+      editGuiaExpectador: 'Guía completa para espectadores del Maratón de Monterrey.',
+      GuiaExpectador: 'https://zona2.mx/documentos/guia-expectador-maraton-mty.pdf',
       PrecioEvento: 600.00,
       Moneda: 'MXN',
       Estatus: 'publicado',
     },
     {
       OrgID: organizador.OrgID,
+      RunnerUID: runnerUIDEjemplo,
       Titulo: 'Carrera de la Revolución en Puebla',
-      Subtitulo: 'Conmemora la revolución mexicana',
+      Subtitulo: 'Conmemora la revolución mexicana corriendo por las calles históricas de Puebla',
       TipoEvento: 'Carrera',
+      Internacional: 'N',
       Distancias: '5K, 10K, 21K',
       Categorias: 'Libre',
       FechaEvento: new Date('2024-11-20'),
@@ -146,16 +313,30 @@ async function main() {
       Pais: 'México',
       Lugar: 'Zócalo de Puebla',
       UrlMapa: 'https://maps.google.com/puebla',
-      UrlImagen: 'https://ejemplo.com/imagen6.jpg',
+      UrlCalendario: 'https://calendar.google.com/event?action=TEMPLATE&tmeid=pqr678',
+      imagen: 'https://ejemplo.com/imagenes/carrera-revolucion-puebla.jpg',
+      UrlImagen: 'https://ejemplo.com/imagenes/carrera-revolucion-puebla.jpg',
+      UrlRegistro: 'https://zona2.mx/eventos/carrera-revolucion-puebla/registro',
+      UrlPagoDirecto: 'https://zona2.mx/pago/carrera-revolucion-puebla',
+      MaxPuntosZ2: 4000,
+      MaxDescuentoZ2: 40,
+      PuntosEquivalencia: 100,
+      DescuentoImporte: 40.00,
+      editCartaExoneracion: 'Carta de exoneración de responsabilidad para la Carrera de la Revolución en Puebla.',
+      UrlCartaExoneracion: 'https://zona2.mx/documentos/carta-exoneracion-revolucion-puebla.pdf',
+      editGuiaExpectador: 'Guía para espectadores de la Carrera de la Revolución en Puebla.',
+      GuiaExpectador: 'https://zona2.mx/documentos/guia-expectador-revolucion-puebla.pdf',
       PrecioEvento: 450.00,
       Moneda: 'MXN',
       Estatus: 'publicado',
     },
     {
       OrgID: organizador.OrgID,
+      RunnerUID: runnerUIDEjemplo,
       Titulo: 'Maratón de Oaxaca',
-      Subtitulo: 'Corre por las calles coloniales de Oaxaca',
+      Subtitulo: 'Corre por las calles coloniales de Oaxaca. Disfruta de la cultura y tradición oaxaqueña.',
       TipoEvento: 'Carrera',
+      Internacional: 'N',
       Distancias: '10K, 21K',
       Categorias: 'Libre, Juvenil',
       FechaEvento: new Date('2024-10-15'),
@@ -165,16 +346,30 @@ async function main() {
       Pais: 'México',
       Lugar: 'Centro Histórico de Oaxaca',
       UrlMapa: 'https://maps.google.com/oaxaca',
-      UrlImagen: 'https://ejemplo.com/imagen7.jpg',
+      UrlCalendario: 'https://calendar.google.com/event?action=TEMPLATE&tmeid=stu901',
+      imagen: 'https://ejemplo.com/imagenes/maraton-oaxaca-2024.jpg',
+      UrlImagen: 'https://ejemplo.com/imagenes/maraton-oaxaca-2024.jpg',
+      UrlRegistro: 'https://zona2.mx/eventos/maraton-oaxaca-2024/registro',
+      UrlPagoDirecto: 'https://zona2.mx/pago/maraton-oaxaca-2024',
+      MaxPuntosZ2: 3500,
+      MaxDescuentoZ2: 35,
+      PuntosEquivalencia: 100,
+      DescuentoImporte: 35.00,
+      editCartaExoneracion: 'Carta de exoneración de responsabilidad para el Maratón de Oaxaca 2024.',
+      UrlCartaExoneracion: 'https://zona2.mx/documentos/carta-exoneracion-maraton-oaxaca.pdf',
+      editGuiaExpectador: 'Guía completa para espectadores del Maratón de Oaxaca.',
+      GuiaExpectador: 'https://zona2.mx/documentos/guia-expectador-maraton-oaxaca.pdf',
       PrecioEvento: 400.00,
       Moneda: 'MXN',
       Estatus: 'publicado',
     },
     {
       OrgID: organizador.OrgID,
+      RunnerUID: runnerUIDEjemplo,
       Titulo: 'Carrera del Día de Muertos en Morelia',
-      Subtitulo: 'Celebra el día de muertos corriendo',
+      Subtitulo: 'Celebra el día de muertos corriendo por las calles de Morelia. Una experiencia única llena de tradición.',
       TipoEvento: 'Carrera',
+      Internacional: 'N',
       Distancias: '5K, 10K',
       Categorias: 'Libre',
       FechaEvento: new Date('2024-11-02'),
@@ -184,16 +379,30 @@ async function main() {
       Pais: 'México',
       Lugar: 'Centro Histórico de Morelia',
       UrlMapa: 'https://maps.google.com/morelia',
-      UrlImagen: 'https://ejemplo.com/imagen8.jpg',
+      UrlCalendario: 'https://calendar.google.com/event?action=TEMPLATE&tmeid=vwx234',
+      imagen: 'https://ejemplo.com/imagenes/carrera-dia-muertos-morelia.jpg',
+      UrlImagen: 'https://ejemplo.com/imagenes/carrera-dia-muertos-morelia.jpg',
+      UrlRegistro: 'https://zona2.mx/eventos/carrera-dia-muertos-morelia/registro',
+      UrlPagoDirecto: 'https://zona2.mx/pago/carrera-dia-muertos-morelia',
+      MaxPuntosZ2: 2500,
+      MaxDescuentoZ2: 25,
+      PuntosEquivalencia: 100,
+      DescuentoImporte: 25.00,
+      editCartaExoneracion: 'Carta de exoneración de responsabilidad para la Carrera del Día de Muertos en Morelia.',
+      UrlCartaExoneracion: 'https://zona2.mx/documentos/carta-exoneracion-dia-muertos-morelia.pdf',
+      editGuiaExpectador: 'Guía para espectadores de la Carrera del Día de Muertos en Morelia.',
+      GuiaExpectador: 'https://zona2.mx/documentos/guia-expectador-dia-muertos-morelia.pdf',
       PrecioEvento: 350.00,
       Moneda: 'MXN',
       Estatus: 'publicado',
     },
     {
       OrgID: organizador.OrgID,
+      RunnerUID: runnerUIDEjemplo,
       Titulo: 'Maratón de Tijuana',
-      Subtitulo: 'Carrera fronteriza en Tijuana',
+      Subtitulo: 'Carrera fronteriza en Tijuana. Conecta dos países corriendo.',
       TipoEvento: 'Carrera',
+      Internacional: 'S',
       Distancias: '10K, 21K, 42K',
       Categorias: 'Libre, Veteranos',
       FechaEvento: new Date('2024-12-08'),
@@ -203,16 +412,30 @@ async function main() {
       Pais: 'México',
       Lugar: 'Playa de Tijuana',
       UrlMapa: 'https://maps.google.com/tijuana',
-      UrlImagen: 'https://ejemplo.com/imagen9.jpg',
+      UrlCalendario: 'https://calendar.google.com/event?action=TEMPLATE&tmeid=yza567',
+      imagen: 'https://ejemplo.com/imagenes/maraton-tijuana-2024.jpg',
+      UrlImagen: 'https://ejemplo.com/imagenes/maraton-tijuana-2024.jpg',
+      UrlRegistro: 'https://zona2.mx/eventos/maraton-tijuana-2024/registro',
+      UrlPagoDirecto: 'https://zona2.mx/pago/maraton-tijuana-2024',
+      MaxPuntosZ2: 5500,
+      MaxDescuentoZ2: 55,
+      PuntosEquivalencia: 100,
+      DescuentoImporte: 55.00,
+      editCartaExoneracion: 'Carta de exoneración de responsabilidad para el Maratón de Tijuana 2024.',
+      UrlCartaExoneracion: 'https://zona2.mx/documentos/carta-exoneracion-maraton-tijuana.pdf',
+      editGuiaExpectador: 'Guía completa para espectadores del Maratón de Tijuana.',
+      GuiaExpectador: 'https://zona2.mx/documentos/guia-expectador-maraton-tijuana.pdf',
       PrecioEvento: 550.00,
       Moneda: 'MXN',
       Estatus: 'publicado',
     },
     {
       OrgID: organizador.OrgID,
+      RunnerUID: runnerUIDEjemplo,
       Titulo: 'Carrera de San Miguel de Allende',
-      Subtitulo: 'Corre por las calles pintorescas de San Miguel',
+      Subtitulo: 'Corre por las calles pintorescas de San Miguel de Allende. Una experiencia única en una de las ciudades más bellas de México.',
       TipoEvento: 'Carrera',
+      Internacional: 'N',
       Distancias: '5K, 10K',
       Categorias: 'Libre',
       FechaEvento: new Date('2024-11-30'),
@@ -222,7 +445,19 @@ async function main() {
       Pais: 'México',
       Lugar: 'Centro de San Miguel de Allende',
       UrlMapa: 'https://maps.google.com/sanmiguel',
-      UrlImagen: 'https://ejemplo.com/imagen10.jpg',
+      UrlCalendario: 'https://calendar.google.com/event?action=TEMPLATE&tmeid=bcd890',
+      imagen: 'https://ejemplo.com/imagenes/carrera-san-miguel-allende.jpg',
+      UrlImagen: 'https://ejemplo.com/imagenes/carrera-san-miguel-allende.jpg',
+      UrlRegistro: 'https://zona2.mx/eventos/carrera-san-miguel-allende/registro',
+      UrlPagoDirecto: 'https://zona2.mx/pago/carrera-san-miguel-allende',
+      MaxPuntosZ2: 4000,
+      MaxDescuentoZ2: 40,
+      PuntosEquivalencia: 100,
+      DescuentoImporte: 40.00,
+      editCartaExoneracion: 'Carta de exoneración de responsabilidad para la Carrera de San Miguel de Allende.',
+      UrlCartaExoneracion: 'https://zona2.mx/documentos/carta-exoneracion-san-miguel-allende.pdf',
+      editGuiaExpectador: 'Guía para espectadores de la Carrera de San Miguel de Allende.',
+      GuiaExpectador: 'https://zona2.mx/documentos/guia-expectador-san-miguel-allende.pdf',
       PrecioEvento: 450.00,
       Moneda: 'MXN',
       Estatus: 'publicado',
@@ -957,9 +1192,11 @@ async function main() {
     const eventosOrganizador = [
       {
         OrgID: organizadorRegistro.OrgID,
+        RunnerUID: organizadorUID,
         Titulo: 'Maratón de la Riviera Maya 2025',
-        Subtitulo: 'Carrera por las playas más hermosas de la Riviera Maya',
+        Subtitulo: 'Carrera por las playas más hermosas de la Riviera Maya. Una experiencia única en el Caribe mexicano.',
         TipoEvento: 'Carrera',
+        Internacional: 'S',
         Distancias: '5K, 10K, 21K, 42K',
         Categorias: 'Libre, Élite, Veteranos',
         FechaEvento: new Date('2025-03-15'),
@@ -969,16 +1206,30 @@ async function main() {
         Pais: 'México',
         Lugar: 'Playa Mamitas',
         UrlMapa: 'https://maps.google.com/playadelcarmen',
+        UrlCalendario: 'https://calendar.google.com/event?action=TEMPLATE&tmeid=riviera001',
+        imagen: 'https://ejemplo.com/riviera-maya.jpg',
         UrlImagen: 'https://ejemplo.com/riviera-maya.jpg',
+        UrlRegistro: 'https://zona2.mx/eventos/maraton-riviera-maya-2025/registro',
+        UrlPagoDirecto: 'https://zona2.mx/pago/maraton-riviera-maya-2025',
+        MaxPuntosZ2: 7500,
+        MaxDescuentoZ2: 75,
+        PuntosEquivalencia: 100,
+        DescuentoImporte: 75.00,
+        editCartaExoneracion: 'Carta de exoneración de responsabilidad para el Maratón de la Riviera Maya 2025.',
+        UrlCartaExoneracion: 'https://zona2.mx/documentos/carta-exoneracion-riviera-maya.pdf',
+        editGuiaExpectador: 'Guía completa para espectadores del Maratón de la Riviera Maya.',
+        GuiaExpectador: 'https://zona2.mx/documentos/guia-expectador-riviera-maya.pdf',
         PrecioEvento: 750.00,
         Moneda: 'MXN',
         Estatus: 'publicado',
       },
       {
         OrgID: organizadorRegistro.OrgID,
+        RunnerUID: organizadorUID,
         Titulo: 'Carrera Nocturna de Mérida',
-        Subtitulo: 'Corre bajo las estrellas en el centro histórico',
+        Subtitulo: 'Corre bajo las estrellas en el centro histórico de Mérida. Una experiencia mágica en la ciudad blanca.',
         TipoEvento: 'Carrera',
+        Internacional: 'N',
         Distancias: '5K, 10K',
         Categorias: 'Libre',
         FechaEvento: new Date('2025-04-20'),
@@ -988,16 +1239,30 @@ async function main() {
         Pais: 'México',
         Lugar: 'Centro Histórico de Mérida',
         UrlMapa: 'https://maps.google.com/merida',
+        UrlCalendario: 'https://calendar.google.com/event?action=TEMPLATE&tmeid=merida002',
+        imagen: 'https://ejemplo.com/merida-nocturna.jpg',
         UrlImagen: 'https://ejemplo.com/merida-nocturna.jpg',
+        UrlRegistro: 'https://zona2.mx/eventos/carrera-nocturna-merida-2025/registro',
+        UrlPagoDirecto: 'https://zona2.mx/pago/carrera-nocturna-merida-2025',
+        MaxPuntosZ2: 4000,
+        MaxDescuentoZ2: 40,
+        PuntosEquivalencia: 100,
+        DescuentoImporte: 40.00,
+        editCartaExoneracion: 'Carta de exoneración de responsabilidad para la Carrera Nocturna de Mérida.',
+        UrlCartaExoneracion: 'https://zona2.mx/documentos/carta-exoneracion-nocturna-merida.pdf',
+        editGuiaExpectador: 'Guía para espectadores de la Carrera Nocturna de Mérida.',
+        GuiaExpectador: 'https://zona2.mx/documentos/guia-expectador-nocturna-merida.pdf',
         PrecioEvento: 450.00,
         Moneda: 'MXN',
         Estatus: 'publicado',
       },
       {
         OrgID: organizadorRegistro.OrgID,
+        RunnerUID: organizadorUID,
         Titulo: 'Trail Running en Cenotes',
-        Subtitulo: 'Carrera de trail running por los cenotes de Yucatán',
+        Subtitulo: 'Carrera de trail running por los cenotes de Yucatán. Desafía la naturaleza en una experiencia única.',
         TipoEvento: 'Trail',
+        Internacional: 'N',
         Distancias: '10K, 21K',
         Categorias: 'Libre, Veteranos',
         FechaEvento: new Date('2025-05-10'),
@@ -1007,7 +1272,19 @@ async function main() {
         Pais: 'México',
         Lugar: 'Cenote Xkeken',
         UrlMapa: 'https://maps.google.com/valladolid',
+        UrlCalendario: 'https://calendar.google.com/event?action=TEMPLATE&tmeid=cenotes003',
+        imagen: 'https://ejemplo.com/cenotes.jpg',
         UrlImagen: 'https://ejemplo.com/cenotes.jpg',
+        UrlRegistro: 'https://zona2.mx/eventos/trail-cenotes-2025/registro',
+        UrlPagoDirecto: 'https://zona2.mx/pago/trail-cenotes-2025',
+        MaxPuntosZ2: 5500,
+        MaxDescuentoZ2: 55,
+        PuntosEquivalencia: 100,
+        DescuentoImporte: 55.00,
+        editCartaExoneracion: 'Carta de exoneración de responsabilidad para el Trail Running en Cenotes. Esta carrera incluye terreno desafiante y requiere experiencia en trail running.',
+        UrlCartaExoneracion: 'https://zona2.mx/documentos/carta-exoneracion-trail-cenotes.pdf',
+        editGuiaExpectador: 'Guía completa para espectadores del Trail Running en Cenotes. Puntos de observación y recomendaciones.',
+        GuiaExpectador: 'https://zona2.mx/documentos/guia-expectador-trail-cenotes.pdf',
         PrecioEvento: 600.00,
         Moneda: 'MXN',
         Estatus: 'publicado',

@@ -84,6 +84,7 @@ CREATE TABLE `sec_users` (
     `role` VARCHAR(128) NULL,
     `pswd_last_updated` TIMESTAMP(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
     `mfa_last_updated` DATETIME(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `equiposIDs` JSON NULL,
 
     UNIQUE INDEX `uq_runneruid`(`RunnerUID`),
     INDEX `idx_runneruid`(`RunnerUID`),
