@@ -7,6 +7,43 @@ import { UpdateEventoDto } from './dto/update-evento.dto';
 export class EventosService {
   constructor(private readonly prisma: PrismaService) {}
 
+  // Función auxiliar para extraer solo la hora de HoraEvento
+  private extractHora(horaEvento: Date | string | null): string | null {
+    if (!horaEvento) return null;
+    
+    // Si ya es un string en formato HH:mm:ss, devolverlo directamente
+    if (typeof horaEvento === 'string') {
+      // Verificar si es formato de hora (HH:mm:ss o HH:mm)
+      const horaMatch = horaEvento.match(/^(\d{2}):(\d{2})(:(\d{2}))?$/);
+      if (horaMatch) {
+        return horaMatch[3] ? horaEvento : `${horaEvento}:00`;
+      }
+      // Si es un string de fecha/hora, convertir a Date
+      const date = new Date(horaEvento);
+      if (isNaN(date.getTime())) return null;
+      const hours = date.getUTCHours().toString().padStart(2, '0');
+      const minutes = date.getUTCMinutes().toString().padStart(2, '0');
+      const seconds = date.getUTCSeconds().toString().padStart(2, '0');
+      return `${hours}:${minutes}:${seconds}`;
+    }
+    
+    // Si es un objeto Date
+    const date = new Date(horaEvento);
+    if (isNaN(date.getTime())) return null;
+    const hours = date.getUTCHours().toString().padStart(2, '0');
+    const minutes = date.getUTCMinutes().toString().padStart(2, '0');
+    const seconds = date.getUTCSeconds().toString().padStart(2, '0');
+    return `${hours}:${minutes}:${seconds}`;
+  }
+
+  // Función auxiliar para transformar eventos y extraer solo la hora
+  private transformEventos(eventos: any[]): any[] {
+    return eventos.map((evento) => ({
+      ...evento,
+      HoraEvento: this.extractHora(evento.HoraEvento),
+    }));
+  }
+
   async create(createEventoDto: CreateEventoDto) {
     // Verificar que el organizador existe
     const organizador = await this.prisma.organizadores.findUnique({
@@ -48,10 +85,15 @@ export class EventosService {
       },
     });
 
+    const eventoTransformado = {
+      ...evento,
+      HoraEvento: this.extractHora(evento.HoraEvento),
+    };
+
     return {
       message: 'Evento creado exitosamente',
       status: 'success',
-      evento,
+      evento: eventoTransformado,
     };
   }
 
@@ -62,11 +104,13 @@ export class EventosService {
       },
     });
 
+    const eventosTransformados = this.transformEventos(eventos);
+
     return {
       message: 'Eventos obtenidos exitosamente',
       status: 'success',
-      total: eventos.length,
-      eventos,
+      total: eventosTransformados.length,
+      eventos: eventosTransformados,
     };
   }
 
@@ -79,10 +123,15 @@ export class EventosService {
       throw new NotFoundException(`Evento con ID ${id} no encontrado`);
     }
 
+    const eventoTransformado = {
+      ...evento,
+      HoraEvento: this.extractHora(evento.HoraEvento),
+    };
+
     return {
       message: 'Evento obtenido exitosamente',
       status: 'success',
-      evento,
+      evento: eventoTransformado,
     };
   }
 
@@ -98,11 +147,13 @@ export class EventosService {
       },
     });
 
+    const eventosTransformados = this.transformEventos(eventos);
+
     return {
       message: `Eventos en estado '${estado}' obtenidos exitosamente`,
       status: 'success',
-      total: eventos.length,
-      eventos,
+      total: eventosTransformados.length,
+      eventos: eventosTransformados,
     };
   }
 
@@ -116,11 +167,14 @@ export class EventosService {
       ORDER BY e.FechaEvento ASC
     `;
 
+    const eventosArray = Array.isArray(eventos) ? eventos : [];
+    const eventosTransformados = this.transformEventos(eventosArray);
+
     return {
       message: `Eventos en país '${pais}' obtenidos exitosamente`,
       status: 'success',
-      total: Array.isArray(eventos) ? eventos.length : 0,
-      eventos,
+      total: eventosTransformados.length,
+      eventos: eventosTransformados,
     };
   }
 
@@ -136,11 +190,13 @@ export class EventosService {
       },
     });
 
+    const eventosTransformados = this.transformEventos(eventos);
+
     return {
       message: `Eventos en ciudad '${ciudad}' obtenidos exitosamente`,
       status: 'success',
-      total: eventos.length,
-      eventos,
+      total: eventosTransformados.length,
+      eventos: eventosTransformados,
     };
   }
 
@@ -181,10 +237,15 @@ export class EventosService {
       data: updateData,
     });
 
+    const eventoTransformado = {
+      ...evento,
+      HoraEvento: this.extractHora(evento.HoraEvento),
+    };
+
     return {
       message: 'Evento actualizado exitosamente',
       status: 'success',
-      evento,
+      evento: eventoTransformado,
     };
   }
 
