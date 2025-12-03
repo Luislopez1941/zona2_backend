@@ -38,7 +38,7 @@ export class EquiposController {
     return this.equiposService.findByRunnerUID(runnerUID);
   }
 
-  @Get(':id')
+  @Get('get-by-id/:id')
   findOne(@Param('id') id: string) {
     return this.equiposService.findOne(+id);
   }

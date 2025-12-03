@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Put, Param, Delete, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Put, Param, Delete, Req, UseGuards, Query, BadRequestException } from '@nestjs/common';
 import { Request } from 'express';
 import { SecUsersService } from './sec_users.service';
 import { CreateSecUserDto } from './dto/create-sec_user.dto';
@@ -9,6 +9,7 @@ import { VerifyRecoveryCodeDto } from './dto/verify-recovery-code.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { CreateOrganizadorDto } from './dto/create-organizador.dto';
 import { UpdatePeacerDto } from './dto/update-peacer.dto';
+import { JoinATeamDto } from '../equipos/dto/join-a-team.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 // Extender el tipo Request para incluir el usuario del JWT
@@ -80,7 +81,7 @@ interface RequestWithUser extends Request {
       verifyRecoveryCodeDto.code,
     );
   }
- @Post('reset-password')
+  @Post('reset-password')
   resetPassword(@Body() resetPasswordDto: ChangePasswordDto) {
     // Usar login si está presente, sino usar phone
     const identifier = resetPasswordDto.login || resetPasswordDto.phone;
@@ -132,4 +133,59 @@ interface RequestWithUser extends Request {
   getGananciasReferidos(@Param('runnerUID') runnerUID: string) {
     return this.secUsersService.getGananciasReferidos(runnerUID);
   }
+
+
+  @Get('search')
+  searchUsers(
+    @Query('query') query: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    // Validar que el query tenga al menos 2 caracteres
+    if (!query || query.trim().length < 2) {
+      throw new BadRequestException(
+        'El parámetro query debe tener al menos 2 caracteres',
+      );
+    }
+
+    // Validar y parsear paginación
+    let pageNumber = 1;
+    let limitNumber = 20; // Por defecto 20 resultados
+
+    if (page) {
+      pageNumber = parseInt(page, 10);
+      if (isNaN(pageNumber) || pageNumber < 1) {
+        throw new BadRequestException(
+          'El parámetro page debe ser un número mayor a 0',
+        );
+      }
+    }
+
+    if (limit) {
+      limitNumber = parseInt(limit, 10);
+      if (isNaN(limitNumber) || limitNumber < 1) {
+        throw new BadRequestException(
+          'El parámetro limit debe ser un número mayor a 0',
+        );
+      }
+      // Limitar el máximo de resultados por página para evitar sobrecarga
+      const maxLimit = 50;
+      limitNumber = limitNumber > maxLimit ? maxLimit : limitNumber;
+    }
+
+    return this.secUsersService.searchUsers(
+      query.trim(),
+      pageNumber,
+      limitNumber,
+    );
+  }
+
+
+  @Post('join-a-team')
+  joinATeam(@Body() joinATeamDto: JoinATeamDto) {
+    return this.secUsersService.joinATeam(joinATeamDto);
+  }
+
+
+
 }

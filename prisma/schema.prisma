@@ -16,7 +16,6 @@ model actividades {
   DistanciaKM         Decimal               @db.Decimal(6, 2)
   RitmoMinKm          String                @db.VarChar(10)
   Duracion            String                @db.VarChar(10)
-  Public              Boolean               @default(false) @map("Public")
   Origen              String                @db.VarChar(20)
   Ciudad              String                @db.VarChar(20)
   Pais                String                @db.VarChar(20)
@@ -34,6 +33,7 @@ model actividades {
   zona_activa         Int?
   tipo_actividad      String?               @db.VarChar(20)
   fecha_registro      DateTime?             @db.DateTime(0)
+  public              Boolean               @default(false)
   actividad_ruta      actividad_ruta[]
   actividad_ubicacion actividad_ubicacion[]
   actividad_zonas     actividad_zonas[]
@@ -42,24 +42,8 @@ model actividades {
   @@map("actividades")
 }
 
-model Notificaciones {
-  id             Int      @id @default(autoincrement())
-  toRunnerUID    String   @db.Char(36)
-  fromRunnerUID  String   @db.Char(36)
-  tipo           String   @db.VarChar(50)
-  mensaje        String?  @db.VarChar(255)
-  leida          Boolean  @default(false)
-  fecha          DateTime @default(now())
-
-  @@map("notificaciones")
-  @@unique([toRunnerUID, fromRunnerUID, tipo])
-  @@index([toRunnerUID])
-  @@index([fromRunnerUID])
-}
-
-
 model sec_users {
-  RunnerUID                String    @default(uuid()) @db.Char(36)
+  RunnerUID                String    @unique(map: "uq_runneruid") @default(uuid()) @db.Char(36)
   RunnerUIDRef             String?   @db.Char(36)
   AliasRunner              String?   @db.VarChar(50)
   DisciplinaPrincipal      String?   @db.Char(1)
@@ -112,32 +96,27 @@ model sec_users {
   pswd_last_updated        DateTime? @default(now()) @updatedAt @db.Timestamp(0)
   mfa_last_updated         DateTime? @default(now()) @db.DateTime(0)
 
+  equiposIDs Json?    // aquí guardas los OrgID del model equipos
+
+  
+  
+
+  @@index([RunnerUID], map: "idx_runneruid")
   @@map("sec_users")
 }
-
-model Followers {
-  id                 Int    @id @default(autoincrement())
-  follower_runnerUID String @db.Char(36)
-  followed_runnerUID String @db.Char(36)
-
-  @@map("followers")
-  @@unique([follower_runnerUID, followed_runnerUID])
-}
-
 
 model zonas {
   zonaID       Int      @id @default(autoincrement())
   RunnerUID    String   @db.VarChar(36)
-  RunnerUIDRef String?  @db.VarChar(36)
+  RunnerUIDRef String   @db.VarChar(36)
   puntos       Int
   motivo       String   @db.Char(2)
   origen       String   @db.Char(2)
   fecha        DateTime @db.DateTime(0)
-  mensaje      String?  @db.VarChar(255)  // Nuevo campo opcional para mensaje
+  mensaje      String?  @db.VarChar(255)
 
   @@map("zonas")
 }
-
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model establecimientos {
@@ -169,9 +148,11 @@ model establecimientos {
 model eventos {
   EventoID             Int      @id @default(autoincrement()) @db.UnsignedInt
   OrgID                Int      @db.UnsignedInt
+  RunnerUID            String?  @db.VarChar(36)
   Titulo               String   @db.VarChar(255)
   Subtitulo            String?  @db.MediumText
   TipoEvento           String?  @default("Carrera") @db.LongText
+  Internacional        String?  @db.Char(1)
   Distancias           String?  @db.LongText
   Categorias           String?  @db.LongText
   FechaEvento          DateTime @db.Date
@@ -182,7 +163,7 @@ model eventos {
   Lugar                String?  @db.VarChar(255)
   UrlMapa              String?  @db.VarChar(500)
   UrlCalendario        String?  @db.VarChar(500)
-  imagen               Bytes?   @db.MediumBlob
+  imagen               String?  @db.Text
   UrlImagen            String?  @db.VarChar(500)
   UrlRegistro          String?  @db.VarChar(500)
   UrlPagoDirecto       String?  @db.VarChar(500)
@@ -213,7 +194,7 @@ model organizadores {
   ContactoTelefono    String?               @db.VarChar(50)
   Ciudad              String?               @db.VarChar(100)
   Estado              String?               @db.VarChar(100)
-  Pais                String?               @default("México") @db.VarChar(100)
+  Pais                String?               @default("null") @db.VarChar(100)
   UrlSitio            String?               @db.VarChar(500)
   UrlLogo             Bytes?                @db.MediumBlob
   StripeAccountID     String?               @db.VarChar(255)
@@ -323,6 +304,8 @@ model equipos {
   ContactoWhatsApp         String?                       @db.VarChar(20)
   RedSocial                String?                       @db.VarChar(255)
   Activo                   Boolean?                      @default(true)
+
+
 }
 
 model estados_mexico {
@@ -371,8 +354,10 @@ model inscripciones {
 }
 
 model paises {
-  PaisID Int    @id @default(autoincrement())
-  Nombre String @db.VarChar(150)
+  PaisID    Int    @id @default(autoincrement())
+  CodigoISO String @db.Char(2)
+  Nombre    String @db.VarChar(150)
+  Telefono  String @db.VarChar(10)
 }
 
 model tokens_sms {
@@ -391,20 +376,22 @@ model tokens_sms {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model promociones {
-  PromoID          Int                   @id @default(autoincrement()) @db.UnsignedInt
-  OrgID            Int                   @db.UnsignedInt
-  Titulo           String                @db.VarChar(255)
-  Subtitulo        String                @db.MediumText
-  Imagen           Bytes?                @db.MediumBlob
-  Precio           Decimal               @db.Decimal(10, 2)
-  Moneda           String                @default("MXN") @db.Char(3)
-  MaxPuntosZ2      Int                   @db.UnsignedInt
-  DescuentoImporte Decimal               @db.Decimal(10, 2)
-  TipoPromo        promociones_TipoPromo @default(DescuentoZ2)
-  QRUnico          String?               @db.VarChar(255)
-  FechaInicio      DateTime              @db.Date
-  FechaFin         DateTime              @db.Date
-  Estatus          promociones_Estatus   @default(Activa)
+  PromoID            Int                   @id @default(autoincrement()) @db.UnsignedInt
+  OrgID              Int                   @db.UnsignedInt
+  RunnerUID          String?               @db.VarChar(36)
+  Titulo             String                @db.VarChar(255)
+  Subtitulo          String                @db.MediumText
+  Imagen             String?               @db.Text
+  Precio             Decimal               @db.Decimal(10, 2)
+  Moneda             String                @default("MXN") @db.Char(3)
+  MaxPuntosZ2        Int                   @db.UnsignedInt
+  DescuentoImporte   Decimal               @db.Decimal(10, 2)
+  TipoPromo          promociones_TipoPromo @default(DescuentoZ2)
+  QRUnico            String?               @db.VarChar(255)
+  CategoriaPromocion String?               @db.VarChar(60)
+  FechaInicio        DateTime              @db.Date
+  FechaFin           DateTime              @db.Date
+  Estatus            promociones_Estatus   @default(Activa)
 }
 
 model actividad_ruta {
@@ -440,22 +427,6 @@ model actividad_zonas {
   actividades  actividades @relation(fields: [actividad_id], references: [actID], onDelete: Cascade, onUpdate: Restrict, map: "actividad_zonas_ibfk_1")
 
   @@index([actividad_id], map: "actividad_id")
-}
-
-// Tabla para registrar cuando un usuario da "zonas" (like) a una actividad/publicación
-// Funciona como un sistema de likes: un usuario solo puede dar zonas una vez por actividad
-model zonas_actividades {
-  id            Int       @id @default(autoincrement())
-  RunnerUID     String    @db.VarChar(36) // Usuario que da las zonas (like)
-  actID         Int       // Actividad/publicación a la que se le dan las zonas
-  puntos        Int       @default(100) // Puntos otorgados (puede ser fijo o variable)
-  fecha         DateTime  @default(now()) @db.DateTime(0) // Fecha en que se dio el like
-  actividades   actividades @relation(fields: [actID], references: [actID], onDelete: Cascade, onUpdate: Restrict)
-
-  @@unique([RunnerUID, actID]) // Restricción única: un usuario solo puede dar zonas una vez por actividad
-  @@index([RunnerUID]) // Índice para búsquedas rápidas por usuario
-  @@index([actID]) // Índice para búsquedas rápidas por actividad
-  @@map("zonas_actividades")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -499,11 +470,60 @@ model rutas {
   Ciudad              String            @db.VarChar(50)
   Estado              String?           @db.VarChar(50)
   Pais                String?           @db.VarChar(50)
-  GoogleMaps          String?           @db.VarChar(255)
-  GPXfile             String?           @db.VarChar(255)
+  GoogleMaps          String?           @db.MediumText
+  GPXfile             Bytes?            @db.MediumBlob
   Estatus             rutas_Estatus?    @default(Publica)
   FechaCreacion       DateTime?         @default(now()) @db.DateTime(0)
   FechaActualizacion  DateTime?         @default(now()) @db.Timestamp(0)
+  GPXfile_name        String?           @db.Text
+}
+
+model followers {
+  id                 Int    @id @default(autoincrement())
+  follower_runnerUID String @db.Char(36)
+  followed_runnerUID String @db.Char(36)
+
+  @@unique([follower_runnerUID, followed_runnerUID], map: "unique_follow")
+}
+
+model marketplace_categorias {
+  CategoriaID Int     @id @default(autoincrement())
+  Categoria   String  @db.VarChar(150)
+  Descripcion String? @db.VarChar(255)
+}
+
+model monedas {
+  id     Int    @id @default(autoincrement())
+  codigo String @db.Char(3)
+  nombre String @db.VarChar(80)
+  pais   String @db.VarChar(80)
+}
+
+model notificaciones {
+  id            Int       @id @default(autoincrement())
+  toRunnerUID   String    @db.Char(36)
+  fromRunnerUID String    @db.Char(36)
+  tipo          String    @db.VarChar(50)
+  mensaje       String?   @db.VarChar(255)
+  leida         Boolean?  @default(false)
+  fecha         DateTime? @default(now()) @db.Timestamp(0)
+
+  @@unique([toRunnerUID, fromRunnerUID, tipo], map: "unique_notification")
+  @@index([fromRunnerUID], map: "idx_fromRunnerUID")
+  @@index([toRunnerUID], map: "idx_toRunnerUID")
+}
+
+model zonas_actividades {
+  id          Int         @id @default(autoincrement())
+  RunnerUID   String      @db.VarChar(36)
+  actID       Int
+  puntos      Int?        @default(100)
+  fecha       DateTime?   @default(now()) @db.DateTime(0)
+  actividades actividades @relation(fields: [actID], references: [actID], onDelete: Cascade, onUpdate: Restrict, map: "fk_actividad")
+
+  @@unique([RunnerUID, actID], map: "unique_zona")
+  @@index([actID], map: "idx_actividad")
+  @@index([RunnerUID], map: "idx_runner")
 }
 
 enum establecimientos_Estatus {
@@ -511,13 +531,6 @@ enum establecimientos_Estatus {
   activo
   suspendido
   baja
-}
-
-enum subscriptions_PlanCode {
-  Runner
-  Pacer
-  Visitante
-  Organizador
 }
 
 enum subscriptions_BillingCycle {
@@ -634,4 +647,12 @@ enum rutas_Estatus {
   Publica
   Privada
   Oculta
+}
+
+enum subscriptions_PlanCode {
+  Runner
+  Pacer
+  Visitante
+  Organizador
+  Equipo
 }

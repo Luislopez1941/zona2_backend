@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SmsService } from '../../common/services/sms.service';
 import { NotificacionesService } from '../notificaciones/notificaciones.service';
@@ -1521,6 +1521,277 @@ export class SecUsersService {
         registrosEnZonas: zonasReferidos.length,
         puntosTotales: gananciasTotales,
       },
+    };
+  }
+
+  /**
+   * Búsqueda optimizada y escalable de usuarios por nombre
+   * @param query - Término de búsqueda (mínimo 2 caracteres)
+   * @param page - Número de página (por defecto 1)
+   * @param limit - Límite de resultados por página (por defecto 20, máximo 50)
+   * @returns Lista paginada de usuarios que coinciden con la búsqueda
+   */
+  async searchUsers(query: string, page: number = 1, limit: number = 20) {
+    // Validar query
+    if (!query || query.trim().length < 2) {
+      throw new BadRequestException(
+        'El término de búsqueda debe tener al menos 2 caracteres',
+      );
+    }
+
+    // Limitar el máximo de resultados por página
+    const maxLimit = 50;
+    const limitNumber = limit > maxLimit ? maxLimit : limit;
+
+    // Calcular offset para paginación
+    const skip = (page - 1) * limitNumber;
+
+    // Normalizar el query para búsqueda
+    const searchTerm = query.trim();
+
+    // OPTIMIZACIÓN: Usar búsqueda eficiente con LIKE
+    // MySQL usa índices eficientemente con LIKE cuando el patrón no empieza con %
+    const [usuarios, total] = await Promise.all([
+      // Búsqueda principal: usuarios cuyo nombre empieza con el término (más relevante)
+      this.prisma.sec_users.findMany({
+        where: {
+          AND: [
+            {
+              name: {
+                startsWith: searchTerm,
+              },
+            },
+            {
+              active: 'Y',
+            },
+          ],
+        },
+        select: {
+          RunnerUID: true,
+          name: true,
+          AliasRunner: true,
+          email: true,
+          Ciudad: true,
+          Estado: true,
+          Pais: true,
+          TipoMembresia: true,
+          picture: true,
+          NivelRunner: true,
+        },
+        orderBy: [
+          {
+            name: 'asc',
+          },
+        ],
+        skip,
+        take: limitNumber,
+      }),
+      // Contar total de resultados
+      this.prisma.sec_users.count({
+        where: {
+          AND: [
+            {
+              name: {
+                startsWith: searchTerm,
+              },
+            },
+            {
+              active: 'Y',
+            },
+          ],
+        },
+      }),
+    ]);
+
+    // Si no hay resultados con "starts with", buscar con "contains"
+    let resultadosFinales = usuarios;
+    let totalFinal = total;
+
+    if (usuarios.length === 0) {
+      const [usuariosContains, totalContains] = await Promise.all([
+        this.prisma.sec_users.findMany({
+          where: {
+            AND: [
+              {
+                name: {
+                  contains: searchTerm,
+                },
+              },
+              {
+                active: 'Y',
+              },
+            ],
+          },
+          select: {
+            RunnerUID: true,
+            name: true,
+            AliasRunner: true,
+            email: true,
+            Ciudad: true,
+            Estado: true,
+            Pais: true,
+            TipoMembresia: true,
+            picture: true,
+            NivelRunner: true,
+          },
+          orderBy: [
+            {
+              name: 'asc',
+            },
+          ],
+          skip,
+          take: limitNumber,
+        }),
+        this.prisma.sec_users.count({
+          where: {
+            AND: [
+              {
+                name: {
+                  contains: searchTerm,
+                },
+              },
+              {
+                active: 'Y',
+              },
+            ],
+          },
+        }),
+      ]);
+      resultadosFinales = usuariosContains;
+      totalFinal = totalContains;
+    }
+
+    // Calcular información de paginación
+    const totalPages = Math.ceil(totalFinal / limitNumber);
+    const hasNextPage = page < totalPages;
+    const hasPreviousPage = page > 1;
+
+    return {
+      message: 'Búsqueda de usuarios completada exitosamente',
+      status: 'success',
+      query: searchTerm,
+      pagination: {
+        page,
+        limit: limitNumber,
+        total: totalFinal,
+        totalPages,
+        hasNextPage,
+        hasPreviousPage,
+      },
+      usuarios: resultadosFinales,
+    };
+  }
+
+  /**
+   * Permite que un usuario se una a un equipo
+   * Agrega el OrgID del equipo al array equiposIDs del usuario (JSON)
+   * @param joinATeamDto - DTO con RunnerUID y OrgID
+   * @returns Información del equipo al que se unió el usuario
+   */
+  async joinATeam(joinATeamDto: { RunnerUID: string; OrgID: number }) {
+    const { RunnerUID, OrgID } = joinATeamDto;
+
+    // Verificar que el usuario existe
+    const usuario = await this.prisma.sec_users.findFirst({
+      where: { RunnerUID },
+    });
+
+    if (!usuario) {
+      throw new NotFoundException(`Usuario con RunnerUID ${RunnerUID} no encontrado`);
+    }
+
+    // Verificar que el equipo existe y está activo
+    const equipo = await this.prisma.equipos.findUnique({
+      where: { OrgID },
+    });
+
+    if (!equipo) {
+      throw new NotFoundException(`Equipo con ID ${OrgID} no encontrado`);
+    }
+
+    if (!equipo.Activo) {
+      throw new ConflictException(`El equipo con ID ${OrgID} no está activo`);
+    }
+
+    // Obtener el array actual de equiposIDs
+    let equiposIDsArray: number[] = [];
+    
+    if (usuario.equiposIDs) {
+      // Prisma devuelve JSON como objeto/array directamente
+      if (Array.isArray(usuario.equiposIDs)) {
+        equiposIDsArray = [...(usuario.equiposIDs as number[])]; // Crear copia del array
+      } else if (typeof usuario.equiposIDs === 'string') {
+        // Si es string, parsearlo
+        try {
+          const parsed = JSON.parse(usuario.equiposIDs);
+          equiposIDsArray = Array.isArray(parsed) ? parsed : [];
+        } catch {
+          equiposIDsArray = [];
+        }
+      } else {
+        // Si es un objeto, intentar convertirlo
+        equiposIDsArray = [];
+      }
+    }
+
+    // Verificar si el usuario ya está en este equipo
+    if (equiposIDsArray.includes(OrgID)) {
+      return {
+        message: 'El usuario ya está en este equipo',
+        status: 'success',
+        equipo,
+        equiposIDs: equiposIDsArray,
+      };
+    }
+
+    // Agregar el nuevo OrgID al array (evitar duplicados)
+    if (!equiposIDsArray.includes(OrgID)) {
+      equiposIDsArray.push(OrgID);
+    }
+
+    // Actualizar el usuario y el equipo en una transacción
+    const resultado = await this.prisma.$transaction(async (tx) => {
+      // Actualizar el campo equiposIDs del usuario con el nuevo array
+      // Prisma acepta arrays directamente para campos JSON
+      const usuarioActualizado = await tx.sec_users.update({
+        where: { login: usuario.login },
+        data: {
+          equiposIDs: equiposIDsArray, // Prisma maneja arrays como JSON automáticamente
+        },
+        select: {
+          RunnerUID: true,
+          equiposIDs: true,
+          name: true,
+        },
+      });
+
+      // Incrementar AtletasActivos del nuevo equipo
+      await tx.equipos.update({
+        where: { OrgID },
+        data: {
+          AtletasActivos: {
+            increment: 1,
+          },
+        },
+      });
+
+      return usuarioActualizado;
+    });
+
+    // Obtener el equipo actualizado
+    const equipoActualizado = await this.prisma.equipos.findUnique({
+      where: { OrgID },
+    });
+
+    return {
+      message: 'Usuario unido al equipo exitosamente',
+      status: 'success',
+      usuario: {
+        RunnerUID: resultado.RunnerUID,
+        equiposIDs: resultado.equiposIDs,
+        name: resultado.name,
+      },
+      equipo: equipoActualizado,
     };
   }
 }

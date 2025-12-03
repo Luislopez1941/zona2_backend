@@ -164,7 +164,7 @@ export class ZonasActividadesService {
       message: 'Zonas obtenidas exitosamente',
       status: 'success',
       total: zonas.length,
-      totalPuntos: zonas.reduce((sum, z) => sum + z.puntos, 0),
+      totalPuntos: zonas.reduce((sum, z) => sum + (z.puntos || 0), 0),
       zonas,
     };
   }

@@ -8,7 +8,6 @@ CREATE TABLE `actividades` (
     `DistanciaKM` DECIMAL(6, 2) NOT NULL,
     `RitmoMinKm` VARCHAR(10) NOT NULL,
     `Duracion` VARCHAR(10) NOT NULL,
-    `Public` BOOLEAN NOT NULL DEFAULT false,
     `Origen` VARCHAR(20) NOT NULL,
     `Ciudad` VARCHAR(20) NOT NULL,
     `Pais` VARCHAR(20) NOT NULL,
@@ -26,24 +25,9 @@ CREATE TABLE `actividades` (
     `zona_activa` INTEGER NULL,
     `tipo_actividad` VARCHAR(20) NULL,
     `fecha_registro` DATETIME(0) NULL,
+    `public` BOOLEAN NOT NULL DEFAULT false,
 
     PRIMARY KEY (`actID`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
--- CreateTable
-CREATE TABLE `notificaciones` (
-    `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `toRunnerUID` CHAR(36) NOT NULL,
-    `fromRunnerUID` CHAR(36) NOT NULL,
-    `tipo` VARCHAR(50) NOT NULL,
-    `mensaje` VARCHAR(255) NULL,
-    `leida` BOOLEAN NOT NULL DEFAULT false,
-    `fecha` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-
-    INDEX `notificaciones_toRunnerUID_idx`(`toRunnerUID`),
-    INDEX `notificaciones_fromRunnerUID_idx`(`fromRunnerUID`),
-    UNIQUE INDEX `notificaciones_toRunnerUID_fromRunnerUID_tipo_key`(`toRunnerUID`, `fromRunnerUID`, `tipo`),
-    PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
@@ -101,28 +85,21 @@ CREATE TABLE `sec_users` (
     `pswd_last_updated` TIMESTAMP(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
     `mfa_last_updated` DATETIME(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
 
+    UNIQUE INDEX `uq_runneruid`(`RunnerUID`),
+    INDEX `idx_runneruid`(`RunnerUID`),
     PRIMARY KEY (`login`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
--- CreateTable
-CREATE TABLE `followers` (
-    `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `follower_runnerUID` CHAR(36) NOT NULL,
-    `followed_runnerUID` CHAR(36) NOT NULL,
-
-    UNIQUE INDEX `followers_follower_runnerUID_followed_runnerUID_key`(`follower_runnerUID`, `followed_runnerUID`),
-    PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
 CREATE TABLE `zonas` (
     `zonaID` INTEGER NOT NULL AUTO_INCREMENT,
     `RunnerUID` VARCHAR(36) NOT NULL,
-    `RunnerUIDRef` VARCHAR(36) NULL,
+    `RunnerUIDRef` VARCHAR(36) NOT NULL,
     `puntos` INTEGER NOT NULL,
     `motivo` CHAR(2) NOT NULL,
     `origen` CHAR(2) NOT NULL,
     `fecha` DATETIME(0) NOT NULL,
+    `mensaje` VARCHAR(255) NULL,
 
     PRIMARY KEY (`zonaID`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -157,9 +134,11 @@ CREATE TABLE `establecimientos` (
 CREATE TABLE `eventos` (
     `EventoID` INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
     `OrgID` INTEGER UNSIGNED NOT NULL,
+    `RunnerUID` VARCHAR(36) NULL,
     `Titulo` VARCHAR(255) NOT NULL,
     `Subtitulo` MEDIUMTEXT NULL,
     `TipoEvento` LONGTEXT NULL DEFAULT 'Carrera',
+    `Internacional` CHAR(1) NULL,
     `Distancias` LONGTEXT NULL,
     `Categorias` LONGTEXT NULL,
     `FechaEvento` DATE NOT NULL,
@@ -170,7 +149,7 @@ CREATE TABLE `eventos` (
     `Lugar` VARCHAR(255) NULL,
     `UrlMapa` VARCHAR(500) NULL,
     `UrlCalendario` VARCHAR(500) NULL,
-    `imagen` MEDIUMBLOB NULL,
+    `imagen` TEXT NULL,
     `UrlImagen` VARCHAR(500) NULL,
     `UrlRegistro` VARCHAR(500) NULL,
     `UrlPagoDirecto` VARCHAR(500) NULL,
@@ -203,7 +182,7 @@ CREATE TABLE `organizadores` (
     `ContactoTelefono` VARCHAR(50) NULL,
     `Ciudad` VARCHAR(100) NULL,
     `Estado` VARCHAR(100) NULL,
-    `Pais` VARCHAR(100) NULL DEFAULT 'México',
+    `Pais` VARCHAR(100) NULL DEFAULT 'null',
     `UrlSitio` VARCHAR(500) NULL,
     `UrlLogo` MEDIUMBLOB NULL,
     `StripeAccountID` VARCHAR(255) NULL,
@@ -239,7 +218,7 @@ CREATE TABLE `sec_settings` (
 CREATE TABLE `subscriptions` (
     `SubscriptionUID` CHAR(36) NOT NULL,
     `RunnerUID` CHAR(36) NOT NULL,
-    `PlanCode` ENUM('Runner', 'Pacer', 'Visitante', 'Organizador') NOT NULL,
+    `PlanCode` ENUM('Runner', 'Pacer', 'Visitante', 'Organizador', 'Equipo') NOT NULL,
     `PlanVersion` INTEGER NULL DEFAULT 1,
     `BillingCycle` ENUM('Monthly', 'Quarterly', 'Yearly') NOT NULL DEFAULT 'Yearly',
     `Status` ENUM('Pending', 'Active', 'PastDue', 'Canceled', 'Expired', 'Trial') NOT NULL DEFAULT 'Pending',
@@ -388,7 +367,9 @@ CREATE TABLE `inscripciones` (
 -- CreateTable
 CREATE TABLE `paises` (
     `PaisID` INTEGER NOT NULL AUTO_INCREMENT,
+    `CodigoISO` CHAR(2) NOT NULL,
     `Nombre` VARCHAR(150) NOT NULL,
+    `Telefono` VARCHAR(10) NOT NULL,
 
     PRIMARY KEY (`PaisID`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -413,15 +394,17 @@ CREATE TABLE `tokens_sms` (
 CREATE TABLE `promociones` (
     `PromoID` INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
     `OrgID` INTEGER UNSIGNED NOT NULL,
+    `RunnerUID` VARCHAR(36) NULL,
     `Titulo` VARCHAR(255) NOT NULL,
     `Subtitulo` MEDIUMTEXT NOT NULL,
-    `Imagen` MEDIUMBLOB NULL,
+    `Imagen` TEXT NULL,
     `Precio` DECIMAL(10, 2) NOT NULL,
     `Moneda` CHAR(3) NOT NULL DEFAULT 'MXN',
     `MaxPuntosZ2` INTEGER UNSIGNED NOT NULL,
     `DescuentoImporte` DECIMAL(10, 2) NOT NULL,
     `TipoPromo` ENUM('DescuentoZ2', 'ProductoGratis', 'DescuentoMixto') NOT NULL DEFAULT 'DescuentoZ2',
     `QRUnico` VARCHAR(255) NULL,
+    `CategoriaPromocion` VARCHAR(60) NULL,
     `FechaInicio` DATE NOT NULL,
     `FechaFin` DATE NOT NULL,
     `Estatus` ENUM('Activa', 'Inactiva', 'Suspendida') NOT NULL DEFAULT 'Activa',
@@ -468,20 +451,6 @@ CREATE TABLE `actividad_zonas` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
-CREATE TABLE `zonas_actividades` (
-    `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `RunnerUID` VARCHAR(36) NOT NULL,
-    `actID` INTEGER NOT NULL,
-    `puntos` INTEGER NOT NULL DEFAULT 100,
-    `fecha` DATETIME(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
-
-    INDEX `zonas_actividades_RunnerUID_idx`(`RunnerUID`),
-    INDEX `zonas_actividades_actID_idx`(`actID`),
-    UNIQUE INDEX `zonas_actividades_RunnerUID_actID_key`(`RunnerUID`, `actID`),
-    PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
--- CreateTable
 CREATE TABLE `pacers` (
     `PacerID` INTEGER NOT NULL AUTO_INCREMENT,
     `RunnerUID` CHAR(36) NOT NULL,
@@ -524,13 +493,73 @@ CREATE TABLE `rutas` (
     `Ciudad` VARCHAR(50) NOT NULL,
     `Estado` VARCHAR(50) NULL,
     `Pais` VARCHAR(50) NULL,
-    `GoogleMaps` VARCHAR(255) NULL,
-    `GPXfile` VARCHAR(255) NULL,
+    `GoogleMaps` MEDIUMTEXT NULL,
+    `GPXfile` MEDIUMBLOB NULL,
     `Estatus` ENUM('Publica', 'Privada', 'Oculta') NULL DEFAULT 'Publica',
     `FechaCreacion` DATETIME(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
     `FechaActualizacion` TIMESTAMP(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `GPXfile_name` TEXT NULL,
 
     PRIMARY KEY (`RutaID`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `followers` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `follower_runnerUID` CHAR(36) NOT NULL,
+    `followed_runnerUID` CHAR(36) NOT NULL,
+
+    UNIQUE INDEX `unique_follow`(`follower_runnerUID`, `followed_runnerUID`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `marketplace_categorias` (
+    `CategoriaID` INTEGER NOT NULL AUTO_INCREMENT,
+    `Categoria` VARCHAR(150) NOT NULL,
+    `Descripcion` VARCHAR(255) NULL,
+
+    PRIMARY KEY (`CategoriaID`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `monedas` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `codigo` CHAR(3) NOT NULL,
+    `nombre` VARCHAR(80) NOT NULL,
+    `pais` VARCHAR(80) NOT NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `notificaciones` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `toRunnerUID` CHAR(36) NOT NULL,
+    `fromRunnerUID` CHAR(36) NOT NULL,
+    `tipo` VARCHAR(50) NOT NULL,
+    `mensaje` VARCHAR(255) NULL,
+    `leida` BOOLEAN NULL DEFAULT false,
+    `fecha` TIMESTAMP(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+
+    INDEX `idx_fromRunnerUID`(`fromRunnerUID`),
+    INDEX `idx_toRunnerUID`(`toRunnerUID`),
+    UNIQUE INDEX `unique_notification`(`toRunnerUID`, `fromRunnerUID`, `tipo`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `zonas_actividades` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `RunnerUID` VARCHAR(36) NOT NULL,
+    `actID` INTEGER NOT NULL,
+    `puntos` INTEGER NULL DEFAULT 100,
+    `fecha` DATETIME(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+
+    INDEX `idx_actividad`(`actID`),
+    INDEX `idx_runner`(`RunnerUID`),
+    UNIQUE INDEX `unique_zona`(`RunnerUID`, `actID`),
+    PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- AddForeignKey
@@ -543,4 +572,4 @@ ALTER TABLE `actividad_ubicacion` ADD CONSTRAINT `actividad_ubicacion_ibfk_1` FO
 ALTER TABLE `actividad_zonas` ADD CONSTRAINT `actividad_zonas_ibfk_1` FOREIGN KEY (`actividad_id`) REFERENCES `actividades`(`actID`) ON DELETE CASCADE ON UPDATE RESTRICT;
 
 -- AddForeignKey
-ALTER TABLE `zonas_actividades` ADD CONSTRAINT `zonas_actividades_actID_fkey` FOREIGN KEY (`actID`) REFERENCES `actividades`(`actID`) ON DELETE CASCADE ON UPDATE RESTRICT;
+ALTER TABLE `zonas_actividades` ADD CONSTRAINT `fk_actividad` FOREIGN KEY (`actID`) REFERENCES `actividades`(`actID`) ON DELETE CASCADE ON UPDATE RESTRICT;

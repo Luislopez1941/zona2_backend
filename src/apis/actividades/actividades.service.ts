@@ -336,7 +336,7 @@ export class ActividadesService {
         RunnerUID: {
           in: runnerUIDsSeguidos,
         },
-        Public: true, // Solo actividades públicas
+        public: true, // Solo actividades públicas
       },
       include: {
         actividad_ruta: {
@@ -364,7 +364,7 @@ export class ActividadesService {
         RunnerUID: {
           in: runnerUIDsSeguidos,
         },
-        Public: true,
+        public: true,
       },
     });
 
@@ -505,7 +505,7 @@ export class ActividadesService {
     // Obtener las 20 actividades públicas más recientes
     const actividades = await this.prisma.actividades.findMany({
       where: {
-        Public: true, // Solo actividades públicas
+        public: true, // Solo actividades públicas
       },
       include: {
         actividad_ruta: {
@@ -594,7 +594,7 @@ export class ActividadesService {
     // Obtener todas las actividades públicas de todos los usuarios
     const actividades = await this.prisma.actividades.findMany({
       where: {
-        Public: true, // Solo actividades públicas
+        public: true, // Solo actividades públicas
       },
       include: {
         actividad_ruta: {
@@ -619,7 +619,7 @@ export class ActividadesService {
     // Obtener el total para la paginación
     const total = await this.prisma.actividades.count({
       where: {
-        Public: true,
+        public: true,
       },
     });
 
@@ -760,7 +760,7 @@ export class ActividadesService {
       // Actualizar la actividad
       const actividadActualizada = await this.prisma.actividades.update({
         where: { actID: updatePublicDto.actID },
-        data: { Public: publico },
+        data: { public: publico },
       });
 
       return {
@@ -792,7 +792,7 @@ export class ActividadesService {
           actID: { in: updatePublicDto.actIDs },
           RunnerUID: runneruid,
         },
-        data: { Public: publico },
+        data: { public: publico },
       });
 
       return {
@@ -807,7 +807,7 @@ export class ActividadesService {
       where: {
         RunnerUID: runneruid,
       },
-      data: { Public: publico },
+      data: { public: publico },
     });
 
     return {

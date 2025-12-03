@@ -439,26 +439,26 @@ async function main() {
     const zonas = [
       {
         RunnerUID: runnerUID,
-        RunnerUIDRef: 'RR317DAO',
+        RunnerUIDRef: 'RR317DAO', // Si hay referidor, usar su RunnerUID, si no, usar cadena vacía ''
         puntos: 500,
-        motivo: '01',
-        origen: '01',
+        motivo: 'R', // Motivo 'R' para referidos
+        origen: '3', // Origen '3' para referidos
         fecha: new Date('2024-11-27T10:00:00Z'),
       },
       {
         RunnerUID: runnerUID,
         RunnerUIDRef: 'RR317DAO',
         puntos: 300,
-        motivo: '02',
-        origen: '01',
+        motivo: 'R',
+        origen: '3',
         fecha: new Date('2024-12-01T10:00:00Z'),
       },
       {
         RunnerUID: runnerUID,
         RunnerUIDRef: 'RR317DAO',
         puntos: 200,
-        motivo: '03',
-        origen: '02',
+        motivo: 'R',
+        origen: '3',
         fecha: new Date('2024-12-05T10:00:00Z'),
       },
     ];
@@ -475,7 +475,16 @@ async function main() {
 
   // Crear suscripción
   console.log('\n📋 Creando suscripción...');
-  const subscriptionUID = 'sub_' + runnerUID;
+  // Generar SubscriptionUID en formato #NNNNNNLLL
+  const generateSubscriptionUID = (): string => {
+    const nums = Array.from({ length: 6 }, () => Math.floor(Math.random() * 10)).join('');
+    const char1 = String.fromCharCode(Math.floor(Math.random() * 26) + 65);
+    const char2 = String.fromCharCode(Math.floor(Math.random() * 26) + 65);
+    const char3 = String.fromCharCode(Math.floor(Math.random() * 26) + 65);
+    return `#${nums}${char1}${char2}${char3}`;
+  };
+  
+  const subscriptionUID = generateSubscriptionUID();
   const suscripcionExistente = await prisma.subscriptions.findUnique({
     where: { SubscriptionUID: subscriptionUID },
   });
@@ -497,7 +506,7 @@ async function main() {
         AutoRenew: true,
       },
     });
-    console.log('✅ Suscripción creada exitosamente.');
+    console.log(`✅ Suscripción creada exitosamente con ID: ${subscriptionUID}`);
   } else {
     console.log('✅ Suscripción ya existe.');
   }
@@ -707,26 +716,26 @@ async function main() {
     const zonas2 = [
       {
         RunnerUID: runnerUID2,
-        RunnerUIDRef: 'RR317DAO',
+        RunnerUIDRef: 'RR317DAO', // Si hay referidor, usar su RunnerUID, si no, usar cadena vacía ''
         puntos: 600,
-        motivo: '01',
-        origen: '01',
+        motivo: 'R', // Motivo 'R' para referidos
+        origen: '3', // Origen '3' para referidos
         fecha: new Date('2024-11-28T10:00:00Z'),
       },
       {
         RunnerUID: runnerUID2,
         RunnerUIDRef: 'RR317DAO',
         puntos: 400,
-        motivo: '02',
-        origen: '01',
+        motivo: 'R',
+        origen: '3',
         fecha: new Date('2024-12-02T10:00:00Z'),
       },
       {
         RunnerUID: runnerUID2,
         RunnerUIDRef: 'RR317DAO',
         puntos: 300,
-        motivo: '03',
-        origen: '02',
+        motivo: 'R',
+        origen: '3',
         fecha: new Date('2024-12-06T10:00:00Z'),
       },
     ];
@@ -743,7 +752,16 @@ async function main() {
 
   // Crear suscripción
   console.log('\n📋 Creando suscripción...');
-  const subscriptionUID2 = 'sub_' + runnerUID2;
+  // Generar SubscriptionUID en formato #NNNNNNLLL
+  const generateSubscriptionUID2 = (): string => {
+    const nums = Array.from({ length: 6 }, () => Math.floor(Math.random() * 10)).join('');
+    const char1 = String.fromCharCode(Math.floor(Math.random() * 26) + 65);
+    const char2 = String.fromCharCode(Math.floor(Math.random() * 26) + 65);
+    const char3 = String.fromCharCode(Math.floor(Math.random() * 26) + 65);
+    return `#${nums}${char1}${char2}${char3}`;
+  };
+  
+  const subscriptionUID2 = generateSubscriptionUID2();
   const suscripcionExistente2 = await prisma.subscriptions.findUnique({
     where: { SubscriptionUID: subscriptionUID2 },
   });
@@ -765,7 +783,7 @@ async function main() {
         AutoRenew: true,
       },
     });
-    console.log('✅ Suscripción creada exitosamente.');
+    console.log(`✅ Suscripción creada exitosamente con ID: ${subscriptionUID2}`);
   } else {
     console.log('✅ Suscripción ya existe.');
   }
@@ -1054,7 +1072,16 @@ async function main() {
 
   // Crear suscripción para el organizador
   console.log('\n📋 Creando suscripción para el organizador...');
-  const subscriptionUIDOrg = 'sub_' + organizadorUID;
+  // Generar SubscriptionUID en formato #NNNNNNLLL
+  const generateSubscriptionUIDOrg = (): string => {
+    const nums = Array.from({ length: 6 }, () => Math.floor(Math.random() * 10)).join('');
+    const char1 = String.fromCharCode(Math.floor(Math.random() * 26) + 65);
+    const char2 = String.fromCharCode(Math.floor(Math.random() * 26) + 65);
+    const char3 = String.fromCharCode(Math.floor(Math.random() * 26) + 65);
+    return `#${nums}${char1}${char2}${char3}`;
+  };
+  
+  const subscriptionUIDOrg = generateSubscriptionUIDOrg();
   const suscripcionOrgExistente = await prisma.subscriptions.findUnique({
     where: { SubscriptionUID: subscriptionUIDOrg },
   });
@@ -1076,7 +1103,7 @@ async function main() {
         AutoRenew: true,
       },
     });
-    console.log('✅ Suscripción creada exitosamente para el organizador.');
+    console.log(`✅ Suscripción creada exitosamente para el organizador con ID: ${subscriptionUIDOrg}`);
   } else {
     console.log('✅ Suscripción ya existe para el organizador.');
   }
@@ -1351,6 +1378,166 @@ async function main() {
   }
 
   console.log('\n✅ Equipos e inscripciones completados exitosamente.');
+
+  // Crear rutas de ejemplo
+  console.log('\n🗺️  Creando rutas de ejemplo...');
+  
+  const rutasExistentes = await prisma.rutas.count();
+  if (rutasExistentes > 0) {
+    console.log(`⚠️  Ya existen ${rutasExistentes} rutas en la base de datos.`);
+  } else {
+    const runnerUID1 = 'Z2R738268MVJ'; // Luis López
+    const runnerUID2 = 'Z2R776985QXZ'; // María García
+    const runnerUID3 = 'Z2R698973TQU'; // Carlos Méndez
+
+    const rutas = [
+      // Rutas para Luis López (Mérida)
+      {
+        RunnerUID: runnerUID1,
+        NombreRuta: 'Ruta del Centro Histórico',
+        Descripcion: 'Hermosa ruta que recorre el centro histórico de Mérida, pasando por los principales monumentos y plazas.',
+        Disciplina: 'Carrera',
+        DistanciaKM: '5.5',
+        ElevacionM: 10,
+        Dificultad: 'F_cil' as const,
+        DuracionEstimadoMin: 30,
+        Ciudad: 'Mérida',
+        Estado: 'Yucatán',
+        Pais: 'México',
+        GoogleMaps: 'https://www.google.com/maps/dir/Plaza+Grande,+Mérida,+Yuc./Paseo+de+Montejo,+Mérida,+Yuc./@20.9686,-89.6233,14z',
+        Estatus: 'Publica' as const,
+      },
+      {
+        RunnerUID: runnerUID1,
+        NombreRuta: 'Circuito del Paseo de Montejo',
+        Descripcion: 'Ruta por el emblemático Paseo de Montejo, con sus hermosas mansiones y avenidas arboladas.',
+        Disciplina: 'Carrera',
+        DistanciaKM: '8.2',
+        ElevacionM: 15,
+        Dificultad: 'Moderada' as const,
+        DuracionEstimadoMin: 45,
+        Ciudad: 'Mérida',
+        Estado: 'Yucatán',
+        Pais: 'México',
+        GoogleMaps: 'https://www.google.com/maps/dir/Paseo+de+Montejo,+Mérida,+Yuc./@20.9686,-89.6233,14z',
+        Estatus: 'Publica' as const,
+      },
+      {
+        RunnerUID: runnerUID1,
+        NombreRuta: 'Ruta Parque de las Américas',
+        Descripcion: 'Ruta tranquila por el Parque de las Américas, ideal para principiantes.',
+        Disciplina: 'Carrera',
+        DistanciaKM: '3.0',
+        ElevacionM: 5,
+        Dificultad: 'F_cil' as const,
+        DuracionEstimadoMin: 20,
+        Ciudad: 'Mérida',
+        Estado: 'Yucatán',
+        Pais: 'México',
+        Estatus: 'Publica' as const,
+      },
+      // Rutas para María García (Cancún)
+      {
+        RunnerUID: runnerUID2,
+        NombreRuta: 'Ruta de la Playa Delfines',
+        Descripcion: 'Hermosa ruta costera por la playa Delfines en Cancún, con vistas espectaculares al mar Caribe.',
+        Disciplina: 'Carrera',
+        DistanciaKM: '6.0',
+        ElevacionM: 8,
+        Dificultad: 'F_cil' as const,
+        DuracionEstimadoMin: 35,
+        Ciudad: 'Cancún',
+        Estado: 'Quintana Roo',
+        Pais: 'México',
+        GoogleMaps: 'https://www.google.com/maps/dir/Playa+Delfines,+Cancún,+Q.Roo/@21.0875,-86.7708,14z',
+        Estatus: 'Publica' as const,
+      },
+      {
+        RunnerUID: runnerUID2,
+        NombreRuta: 'Circuito Hotel Zone',
+        Descripcion: 'Ruta por la zona hotelera de Cancún, con vistas al mar y a los hoteles más emblemáticos.',
+        Disciplina: 'Carrera',
+        DistanciaKM: '10.5',
+        ElevacionM: 12,
+        Dificultad: 'Moderada' as const,
+        DuracionEstimadoMin: 60,
+        Ciudad: 'Cancún',
+        Estado: 'Quintana Roo',
+        Pais: 'México',
+        Estatus: 'Publica' as const,
+      },
+      {
+        RunnerUID: runnerUID2,
+        NombreRuta: 'Ruta Parque Kabah',
+        Descripcion: 'Ruta por el Parque Kabah, un oasis verde en medio de Cancún, ideal para entrenamientos.',
+        Disciplina: 'Carrera',
+        DistanciaKM: '4.5',
+        ElevacionM: 6,
+        Dificultad: 'F_cil' as const,
+        DuracionEstimadoMin: 25,
+        Ciudad: 'Cancún',
+        Estado: 'Quintana Roo',
+        Pais: 'México',
+        Estatus: 'Publica' as const,
+      },
+      // Rutas para Carlos Méndez (Mérida - Organizador)
+      {
+        RunnerUID: runnerUID3,
+        NombreRuta: 'Ruta Trail Cenotes',
+        Descripcion: 'Ruta de trail running que pasa por varios cenotes cerca de Mérida, con terreno variado y desafiante.',
+        Disciplina: 'Trail Running',
+        DistanciaKM: '15.0',
+        ElevacionM: 150,
+        Dificultad: 'Dif_cil' as const,
+        DuracionEstimadoMin: 90,
+        Ciudad: 'Mérida',
+        Estado: 'Yucatán',
+        Pais: 'México',
+        GoogleMaps: 'https://www.google.com/maps/dir/Mérida,+Yuc./Cenotes/@20.9686,-89.6233,12z',
+        Estatus: 'Publica' as const,
+      },
+      {
+        RunnerUID: runnerUID3,
+        NombreRuta: 'Maratón de Mérida - Ruta Completa',
+        Descripcion: 'Ruta oficial del Maratón de Mérida, recorre los principales puntos de la ciudad.',
+        Disciplina: 'Carrera',
+        DistanciaKM: '42.2',
+        ElevacionM: 50,
+        Dificultad: 'Experto' as const,
+        DuracionEstimadoMin: 240,
+        Ciudad: 'Mérida',
+        Estado: 'Yucatán',
+        Pais: 'México',
+        Estatus: 'Publica' as const,
+      },
+      {
+        RunnerUID: runnerUID3,
+        NombreRuta: 'Ruta Media Maratón Centro',
+        Descripcion: 'Ruta de media maratón por el centro de Mérida, ideal para entrenamientos de distancia.',
+        Disciplina: 'Carrera',
+        DistanciaKM: '21.1',
+        ElevacionM: 30,
+        Dificultad: 'Moderada' as const,
+        DuracionEstimadoMin: 120,
+        Ciudad: 'Mérida',
+        Estado: 'Yucatán',
+        Pais: 'México',
+        Estatus: 'Publica' as const,
+      },
+    ];
+
+    for (const ruta of rutas) {
+      await prisma.rutas.create({
+        data: ruta,
+      });
+    }
+
+    console.log(`✅ ${rutas.length} rutas creadas exitosamente.`);
+    console.log('🗺️  Rutas creadas:');
+    rutas.forEach((ruta, index) => {
+      console.log(`   ${index + 1}. ${ruta.NombreRuta} - ${ruta.Ciudad} (${ruta.DistanciaKM} km)`);
+    });
+  }
 }
 
 main()

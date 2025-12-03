@@ -108,21 +108,36 @@ export class EquiposService {
       throw new ConflictException(`El equipo con ID ${OrgID} no está activo`);
     }
 
-    // Verificar si el usuario ya está en un equipo
-    if (usuario.equipoID) {
-      // Si ya está en este equipo, retornar éxito sin cambios
+    // Verificar si el usuario ya está en este equipo
       if (usuario.equipoID === OrgID.toString()) {
         return {
           message: 'El usuario ya está en este equipo',
           status: 'success',
+        equipo,
         };
-      }
-      // Si está en otro equipo, permitir el cambio
     }
 
-    // Actualizar el usuario y el equipo en una transacción
+    // Actualizar el usuario y los equipos en una transacción
     await this.prisma.$transaction(async (tx) => {
-      // Actualizar el equipoID del usuario (convertir OrgID a string)
+      // Si el usuario estaba en otro equipo, decrementar el contador del equipo anterior
+      if (usuario.equipoID) {
+        const equipoAnterior = await tx.equipos.findUnique({
+          where: { OrgID: parseInt(usuario.equipoID, 10) },
+        });
+
+        if (equipoAnterior) {
+          await tx.equipos.update({
+            where: { OrgID: parseInt(usuario.equipoID, 10) },
+            data: {
+              AtletasActivos: {
+                decrement: 1,
+              },
+            },
+          });
+        }
+      }
+
+      // Actualizar el equipoID del usuario con el nuevo OrgID (convertir a string)
       await tx.sec_users.update({
         where: { login: usuario.login },
         data: {
@@ -130,8 +145,7 @@ export class EquiposService {
         },
       });
 
-      // Incrementar AtletasActivos si el usuario no estaba en ningún equipo antes
-      if (!usuario.equipoID) {
+      // Incrementar AtletasActivos del nuevo equipo
         await tx.equipos.update({
           where: { OrgID },
           data: {
@@ -140,7 +154,6 @@ export class EquiposService {
             },
           },
         });
-      }
     });
 
     // Obtener el equipo actualizado
