@@ -9,11 +9,14 @@ import { Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @WebSocketGateway({
+  path: '/socket.io',
   cors: {
     origin: true,
     credentials: true,
   },
-  namespace: '/notificaciones',
+  namespace: '/api/notificaciones',
+  transports: ['websocket', 'polling'],
+  allowEIO3: true,
 })
 export class NotificacionesGateway
   implements OnGatewayConnection, OnGatewayDisconnect

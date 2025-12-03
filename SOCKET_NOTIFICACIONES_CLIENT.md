@@ -61,7 +61,8 @@ export function useNotifications(runnerUID: string | null): UseNotificationsRetu
       : 'http://localhost:4000';
 
     // Conectar al servidor de notificaciones
-    const newSocket = io(`${serverUrl}/notificaciones`, {
+    // La URL debe incluir el namespace completo: /api/notificaciones
+    const newSocket = io(`${serverUrl}/api/notificaciones`, {
       query: {
         runnerUID: runnerUID,
       },
@@ -419,10 +420,10 @@ function App() {
 
 ```typescript
 // Desarrollo
-const socket = io('http://localhost:4000/notificaciones', { ... });
+const socket = io('http://localhost:4000/api/notificaciones', { ... });
 
 // Producción
-const socket = io('https://zona2.mx/notificaciones', { ... });
+const socket = io('https://zona2.mx/api/notificaciones', { ... });
 ```
 
 ## Notas Importantes
@@ -449,7 +450,7 @@ const useSocketNotifications = (runnerUID: string | null) => {
 
     const serverUrl = 'https://zona2.mx'; // O 'http://localhost:4000' para desarrollo
     
-    const newSocket = io(`${serverUrl}/notificaciones`, {
+    const newSocket = io(`${serverUrl}/api/notificaciones`, {
       query: { runnerUID },
       transports: ['websocket', 'polling'],
       reconnection: true,
