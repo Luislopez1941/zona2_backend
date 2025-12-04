@@ -1767,11 +1767,11 @@ export class SecUsersService {
     // Actualizar el usuario y el equipo en una transacción
     const resultado = await this.prisma.$transaction(async (tx) => {
       // Actualizar el campo equiposIDs del usuario con el nuevo array
-      // Prisma acepta arrays directamente para campos JSON
+      // Convertir el array a JSON string ya que el campo es String en Prisma
       const usuarioActualizado = await tx.sec_users.update({
         where: { login: usuario.login },
         data: {
-          equiposIDs: equiposIDsArray, // Prisma maneja arrays como JSON automáticamente
+          equiposIDs: JSON.stringify(equiposIDsArray),
         },
         select: {
           RunnerUID: true,

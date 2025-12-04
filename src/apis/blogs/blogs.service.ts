@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { blog_Estado } from '@prisma/client';
 import { CreateBlogDto } from './dto/create-blog.dto';
 import { UpdateBlogDto } from './dto/update-blog.dto';
 
@@ -14,7 +15,7 @@ export class BlogsService {
   async findAll() {
     const blogs = await this.prisma.blog.findMany({
       where: {
-        Estado: 'Publicado', // Solo blogs publicados
+        Estado: blog_Estado.Publicado, // Solo blogs publicados
       },
       orderBy: {
         FechaPublicacion: 'desc', // Más recientes primero

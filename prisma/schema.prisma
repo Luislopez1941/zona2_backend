@@ -48,6 +48,7 @@ model sec_users {
   AliasRunner              String?   @db.VarChar(50)
   DisciplinaPrincipal      String?   @db.Char(1)
   name                     String    @db.VarChar(255)
+  equiposIDs               String?   @db.LongText
   login                    String    @id @db.VarChar(255)
   phone                    String    @db.VarChar(65)
   email                    String    @db.VarChar(255)
@@ -95,11 +96,6 @@ model sec_users {
   role                     String?   @db.VarChar(128)
   pswd_last_updated        DateTime? @default(now()) @updatedAt @db.Timestamp(0)
   mfa_last_updated         DateTime? @default(now()) @db.DateTime(0)
-
-  equiposIDs Json?    // aquí guardas los OrgID del model equipos
-
-  
-  
 
   @@index([RunnerUID], map: "idx_runneruid")
   @@map("sec_users")
@@ -304,8 +300,6 @@ model equipos {
   ContactoWhatsApp         String?                       @db.VarChar(20)
   RedSocial                String?                       @db.VarChar(255)
   Activo                   Boolean?                      @default(true)
-
-
 }
 
 model estados_mexico {
@@ -454,6 +448,11 @@ model pacers {
   PacerActivo                 Boolean? @default(true)
   FechaRegistro               DateTime @default(now()) @db.Timestamp(0)
   FechaActualizacion          DateTime @default(now()) @db.Timestamp(0)
+  Race1                       String?  @db.VarChar(255)
+  Race2                       String?  @db.VarChar(255)
+  Race3                       String?  @db.VarChar(255)
+  Race4                       String?  @db.VarChar(255)
+  Race5                       String?  @db.VarChar(255)
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -524,6 +523,37 @@ model zonas_actividades {
   @@unique([RunnerUID, actID], map: "unique_zona")
   @@index([actID], map: "idx_actividad")
   @@index([RunnerUID], map: "idx_runner")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model blog {
+  BlogID             Int         @id @default(autoincrement())
+  Tipo               blog_Tipo   @default(Blog)
+  Categoria          String      @db.VarChar(150)
+  Titulo             String      @db.VarChar(255)
+  Slug               String      @unique(map: "Slug") @db.VarChar(255)
+  Resumen            String?     @db.Text
+  ContenidoHTML      String?     @db.LongText
+  ImagenPortada      String?     @db.VarChar(255)
+  AutorNombre        String      @db.VarChar(150)
+  AutorID            String?     @db.Char(36)
+  FechaPublicacion   DateTime?   @db.DateTime(0)
+  Estado             blog_Estado @default(Borrador)
+  Vistas             Int?        @default(0)
+  Etiquetas          String?     @db.VarChar(255)
+  FechaCreacion      DateTime    @default(now()) @db.Timestamp(0)
+  FechaActualizacion DateTime    @default(now()) @db.Timestamp(0)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model runner_photos {
+  PhotoUID    Int                  @id @default(autoincrement())
+  RunnerUID   String               @db.Char(36)
+  EventUID    String?              @db.Char(36)
+  PhotoURL    String               @db.VarChar(255)
+  Description String?              @db.VarChar(255)
+  Status      runner_photos_Status @default(Pending)
+  Fecha       DateTime?            @db.Date
 }
 
 enum establecimientos_Estatus {
@@ -655,4 +685,21 @@ enum subscriptions_PlanCode {
   Visitante
   Organizador
   Equipo
+}
+
+enum blog_Tipo {
+  Blog
+  Noticia
+}
+
+enum runner_photos_Status {
+  Pending
+  Approved
+  Rejected
+}
+
+enum blog_Estado {
+  Borrador
+  Publicado
+  Archivado
 }
