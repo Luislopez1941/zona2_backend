@@ -583,6 +583,28 @@ export class SecUsersService {
     return user;
   }
 
+  /**
+   * Obtiene un usuario por su RunnerUID
+   */
+  async getById(runnerUID: string) {
+    const user = await this.prisma.sec_users.findFirst({
+      where: { RunnerUID: runnerUID },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`Usuario con RunnerUID '${runnerUID}' no encontrado`);
+    }
+
+    // Retornar usuario sin la contraseña
+    const { pswd, ...userWithoutPassword } = user;
+
+    return {
+      message: 'Usuario obtenido exitosamente',
+      status: 'success',
+      user: userWithoutPassword,
+    };
+  }
+
   async update(login: string, updateSecUserDto: UpdateSecUserDto) {
     const existingUser = await this.findOne(login); // Verificar que el usuario existe
 
