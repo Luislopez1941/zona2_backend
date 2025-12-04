@@ -97,6 +97,38 @@ export class InscripcionesService {
     };
   }
 
+  /**
+   * Obtiene todas las inscripciones de un usuario por su RunnerUID
+   */
+  async findByRunnerUID(runnerUID: string) {
+    // Verificar que el usuario existe
+    const usuario = await this.prisma.sec_users.findFirst({
+      where: { RunnerUID: runnerUID },
+    });
+
+    if (!usuario) {
+      throw new NotFoundException(`Usuario con RunnerUID ${runnerUID} no encontrado`);
+    }
+
+    // Obtener todas las inscripciones del usuario
+    const inscripciones = await this.prisma.inscripciones.findMany({
+      where: {
+        RunnerUID: runnerUID,
+      },
+      orderBy: {
+        FechaEvento: 'asc',
+      },
+    });
+
+    return {
+      message: 'Inscripciones obtenidas exitosamente',
+      status: 'success',
+      total: inscripciones.length,
+      runnerUID,
+      inscripciones,
+    };
+  }
+
   findAll() {
     return `This action returns all inscripciones`;
   }

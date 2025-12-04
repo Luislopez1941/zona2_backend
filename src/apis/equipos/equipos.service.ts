@@ -28,29 +28,101 @@ export class EquiposService {
       orderBy: {
         NombreEquipo: 'asc',
       },
+      // Devolver todos los campos de la tabla
+      select: {
+        OrgID: true,
+        RunnerUID: true,
+        Logo: true, // Bytes - se devuelve como Buffer, puede convertirse a base64 si es necesario
+        Contacto: true,
+        Celular: true,
+        Correo: true,
+        NombreEquipo: true,
+        AliasEquipo: true,
+        RFC: true,
+        Descripcion: true,
+        Ciudad: true,
+        Estado: true,
+        Pais: true,
+        LugarEntrenamiento: true,
+        Disciplinas: true,
+        HorarioEntrenamiento: true,
+        AtletasActivos: true,
+        EntrenadoresTotales: true,
+        ProgramasDisponibles: true,
+        EntrenadoresEspecialidad: true,
+        NivelEquipo: true,
+        Certificacion: true,
+        IntegracionZona2: true,
+        CostoMensual: true,
+        ContactoWhatsApp: true,
+        RedSocial: true,
+        Activo: true,
+      },
     });
+
+    // Convertir Logo (Buffer) a base64 si existe
+    const equiposConLogo = equipos.map((equipo) => ({
+      ...equipo,
+      Logo: equipo.Logo ? Buffer.from(equipo.Logo).toString('base64') : null,
+    }));
 
     return {
       message: 'Equipos obtenidos exitosamente',
       status: 'success',
-      total: equipos.length,
-      equipos,
+      total: equiposConLogo.length,
+      equipos: equiposConLogo,
     };
   }
 
   async findOne(id: number) {
     const equipo = await this.prisma.equipos.findUnique({
       where: { OrgID: id },
+      // Devolver todos los campos de la tabla
+      select: {
+        OrgID: true,
+        RunnerUID: true,
+        Logo: true,
+        Contacto: true,
+        Celular: true,
+        Correo: true,
+        NombreEquipo: true,
+        AliasEquipo: true,
+        RFC: true,
+        Descripcion: true,
+        Ciudad: true,
+        Estado: true,
+        Pais: true,
+        LugarEntrenamiento: true,
+        Disciplinas: true,
+        HorarioEntrenamiento: true,
+        AtletasActivos: true,
+        EntrenadoresTotales: true,
+        ProgramasDisponibles: true,
+        EntrenadoresEspecialidad: true,
+        NivelEquipo: true,
+        Certificacion: true,
+        IntegracionZona2: true,
+        CostoMensual: true,
+        ContactoWhatsApp: true,
+        RedSocial: true,
+        Activo: true,
+      },
     });
 
     if (!equipo) {
       throw new NotFoundException(`Equipo con ID ${id} no encontrado`);
     }
 
+    // Convertir Logo (Buffer) a base64 si existe
+    const equipoConLogo = {
+      ...equipo,
+      Logo: equipo.Logo ? Buffer.from(equipo.Logo).toString('base64') : null,
+    };
+
     return {
       message: 'Equipo obtenido exitosamente',
       status: 'success',
-      equipo,
+      equipo: equipoConLogo,
     };
   }
 
@@ -180,14 +252,50 @@ export class EquiposService {
       orderBy: {
         NombreEquipo: 'asc',
       },
+      // Devolver todos los campos de la tabla
+      select: {
+        OrgID: true,
+        RunnerUID: true,
+        Logo: true,
+        Contacto: true,
+        Celular: true,
+        Correo: true,
+        NombreEquipo: true,
+        AliasEquipo: true,
+        RFC: true,
+        Descripcion: true,
+        Ciudad: true,
+        Estado: true,
+        Pais: true,
+        LugarEntrenamiento: true,
+        Disciplinas: true,
+        HorarioEntrenamiento: true,
+        AtletasActivos: true,
+        EntrenadoresTotales: true,
+        ProgramasDisponibles: true,
+        EntrenadoresEspecialidad: true,
+        NivelEquipo: true,
+        Certificacion: true,
+        IntegracionZona2: true,
+        CostoMensual: true,
+        ContactoWhatsApp: true,
+        RedSocial: true,
+        Activo: true,
+      },
     });
+
+    // Convertir Logo (Buffer) a base64 si existe
+    const equiposConLogo = equipos.map((equipo) => ({
+      ...equipo,
+      Logo: equipo.Logo ? Buffer.from(equipo.Logo).toString('base64') : null,
+    }));
 
     return {
       message: 'Equipos obtenidos exitosamente',
       status: 'success',
-      total: equipos.length,
+      total: equiposConLogo.length,
       pais,
-      equipos,
+      equipos: equiposConLogo,
     };
   }
 
@@ -203,14 +311,50 @@ export class EquiposService {
       orderBy: {
         NombreEquipo: 'asc',
       },
+      // Devolver todos los campos de la tabla
+      select: {
+        OrgID: true,
+        RunnerUID: true,
+        Logo: true,
+        Contacto: true,
+        Celular: true,
+        Correo: true,
+        NombreEquipo: true,
+        AliasEquipo: true,
+        RFC: true,
+        Descripcion: true,
+        Ciudad: true,
+        Estado: true,
+        Pais: true,
+        LugarEntrenamiento: true,
+        Disciplinas: true,
+        HorarioEntrenamiento: true,
+        AtletasActivos: true,
+        EntrenadoresTotales: true,
+        ProgramasDisponibles: true,
+        EntrenadoresEspecialidad: true,
+        NivelEquipo: true,
+        Certificacion: true,
+        IntegracionZona2: true,
+        CostoMensual: true,
+        ContactoWhatsApp: true,
+        RedSocial: true,
+        Activo: true,
+      },
     });
+
+    // Convertir Logo (Buffer) a base64 si existe
+    const equiposConLogo = equipos.map((equipo) => ({
+      ...equipo,
+      Logo: equipo.Logo ? Buffer.from(equipo.Logo).toString('base64') : null,
+    }));
 
     return {
       message: 'Equipos obtenidos exitosamente',
       status: 'success',
-      total: equipos.length,
+      total: equiposConLogo.length,
       ciudad,
-      equipos,
+      equipos: equiposConLogo,
     };
   }
 
@@ -226,14 +370,50 @@ export class EquiposService {
       orderBy: {
         NombreEquipo: 'asc',
       },
+      // Devolver todos los campos de la tabla
+      select: {
+        OrgID: true,
+        RunnerUID: true,
+        Logo: true,
+        Contacto: true,
+        Celular: true,
+        Correo: true,
+        NombreEquipo: true,
+        AliasEquipo: true,
+        RFC: true,
+        Descripcion: true,
+        Ciudad: true,
+        Estado: true,
+        Pais: true,
+        LugarEntrenamiento: true,
+        Disciplinas: true,
+        HorarioEntrenamiento: true,
+        AtletasActivos: true,
+        EntrenadoresTotales: true,
+        ProgramasDisponibles: true,
+        EntrenadoresEspecialidad: true,
+        NivelEquipo: true,
+        Certificacion: true,
+        IntegracionZona2: true,
+        CostoMensual: true,
+        ContactoWhatsApp: true,
+        RedSocial: true,
+        Activo: true,
+      },
     });
+
+    // Convertir Logo (Buffer) a base64 si existe
+    const equiposConLogo = equipos.map((equipo) => ({
+      ...equipo,
+      Logo: equipo.Logo ? Buffer.from(equipo.Logo).toString('base64') : null,
+    }));
 
     return {
       message: 'Equipos obtenidos exitosamente',
       status: 'success',
-      total: equipos.length,
+      total: equiposConLogo.length,
       estado,
-      equipos,
+      equipos: equiposConLogo,
     };
   }
 
@@ -249,14 +429,50 @@ export class EquiposService {
       orderBy: {
         NombreEquipo: 'asc',
       },
+      // Devolver todos los campos de la tabla
+      select: {
+        OrgID: true,
+        RunnerUID: true,
+        Logo: true,
+        Contacto: true,
+        Celular: true,
+        Correo: true,
+        NombreEquipo: true,
+        AliasEquipo: true,
+        RFC: true,
+        Descripcion: true,
+        Ciudad: true,
+        Estado: true,
+        Pais: true,
+        LugarEntrenamiento: true,
+        Disciplinas: true,
+        HorarioEntrenamiento: true,
+        AtletasActivos: true,
+        EntrenadoresTotales: true,
+        ProgramasDisponibles: true,
+        EntrenadoresEspecialidad: true,
+        NivelEquipo: true,
+        Certificacion: true,
+        IntegracionZona2: true,
+        CostoMensual: true,
+        ContactoWhatsApp: true,
+        RedSocial: true,
+        Activo: true,
+      },
     });
+
+    // Convertir Logo (Buffer) a base64 si existe
+    const equiposConLogo = equipos.map((equipo) => ({
+      ...equipo,
+      Logo: equipo.Logo ? Buffer.from(equipo.Logo).toString('base64') : null,
+    }));
 
     return {
       message: 'Equipos obtenidos exitosamente',
       status: 'success',
-      total: equipos.length,
+      total: equiposConLogo.length,
       runnerUID,
-      equipos,
+      equipos: equiposConLogo,
     };
   }
 }

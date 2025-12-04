@@ -36,11 +36,49 @@ export class EventosService {
     return `${hours}:${minutes}:${seconds}`;
   }
 
+  // Función auxiliar para verificar si un usuario está inscrito en un evento
+  private async verificarInscripcion(eventoID: number | bigint, runnerUID?: string): Promise<boolean> {
+    if (!runnerUID) return false;
+    
+    // Convertir BigInt a number si es necesario (cuando viene de $queryRaw)
+    const eventoIDNumber = typeof eventoID === 'bigint' ? Number(eventoID) : eventoID;
+    
+    const inscripcion = await this.prisma.inscripciones.findFirst({
+      where: {
+        EventoID: eventoIDNumber,
+        RunnerUID: runnerUID,
+      },
+    });
+    
+    return !!inscripcion;
+  }
+
   // Función auxiliar para transformar eventos y extraer solo la hora
-  private transformEventos(eventos: any[]): any[] {
+  private async transformEventos(eventos: any[], runnerUID?: string): Promise<any[]> {
+    // Si hay runnerUID, verificar inscripciones para todos los eventos
+    if (runnerUID) {
+      const eventosConInscripcion = await Promise.all(
+        eventos.map(async (evento) => {
+          // Convertir EventoID de BigInt a number si es necesario (cuando viene de $queryRaw)
+          const eventoID = typeof evento.EventoID === 'bigint' ? Number(evento.EventoID) : evento.EventoID;
+          const inscrito = await this.verificarInscripcion(eventoID, runnerUID);
+          return {
+            ...evento,
+            EventoID: eventoID, // Asegurar que EventoID sea number
+            HoraEvento: this.extractHora(evento.HoraEvento),
+            inscrito,
+          };
+        })
+      );
+      return eventosConInscripcion;
+    }
+    
+    // Si no hay runnerUID, solo transformar la hora y convertir BigInt a number
     return eventos.map((evento) => ({
       ...evento,
+      EventoID: typeof evento.EventoID === 'bigint' ? Number(evento.EventoID) : evento.EventoID,
       HoraEvento: this.extractHora(evento.HoraEvento),
+      inscrito: false,
     }));
   }
 
@@ -97,14 +135,14 @@ export class EventosService {
     };
   }
 
-  async findAll() {
+  async findAll(runnerUID?: string) {
     const eventos = await this.prisma.eventos.findMany({
       orderBy: {
         FechaEvento: 'asc',
       },
     });
 
-    const eventosTransformados = this.transformEventos(eventos);
+    const eventosTransformados = await this.transformEventos(eventos, runnerUID);
 
     return {
       message: 'Eventos obtenidos exitosamente',
@@ -114,7 +152,7 @@ export class EventosService {
     };
   }
 
-  async findOne(id: number) {
+  async findOne(id: number, runnerUID?: string) {
     const evento = await this.prisma.eventos.findUnique({
       where: { EventoID: id },
     });
@@ -123,9 +161,12 @@ export class EventosService {
       throw new NotFoundException(`Evento con ID ${id} no encontrado`);
     }
 
+    const inscrito = await this.verificarInscripcion(id, runnerUID);
+    
     const eventoTransformado = {
       ...evento,
       HoraEvento: this.extractHora(evento.HoraEvento),
+      inscrito,
     };
 
     return {
@@ -135,7 +176,7 @@ export class EventosService {
     };
   }
 
-  async findByEstado(estado: string) {
+  async findByEstado(estado: string, runnerUID?: string) {
     const eventos = await this.prisma.eventos.findMany({
       where: {
         Estado: {
@@ -147,7 +188,7 @@ export class EventosService {
       },
     });
 
-    const eventosTransformados = this.transformEventos(eventos);
+    const eventosTransformados = await this.transformEventos(eventos, runnerUID);
 
     return {
       message: `Eventos en estado '${estado}' obtenidos exitosamente`,
@@ -157,7 +198,7 @@ export class EventosService {
     };
   }
 
-  async findByPais(pais: string) {
+  async findByPais(pais: string, runnerUID?: string) {
     // Buscar eventos por país del organizador (ya que eventos no tiene campo Pais directamente)
     const eventos = await this.prisma.$queryRaw`
       SELECT e.* 
@@ -168,7 +209,7 @@ export class EventosService {
     `;
 
     const eventosArray = Array.isArray(eventos) ? eventos : [];
-    const eventosTransformados = this.transformEventos(eventosArray);
+    const eventosTransformados = await this.transformEventos(eventosArray, runnerUID);
 
     return {
       message: `Eventos en país '${pais}' obtenidos exitosamente`,
@@ -178,7 +219,7 @@ export class EventosService {
     };
   }
 
-  async findByCiudad(ciudad: string) {
+  async findByCiudad(ciudad: string, runnerUID?: string) {
     const eventos = await this.prisma.eventos.findMany({
       where: {
         Ciudad: {
@@ -190,7 +231,7 @@ export class EventosService {
       },
     });
 
-    const eventosTransformados = this.transformEventos(eventos);
+    const eventosTransformados = await this.transformEventos(eventos, runnerUID);
 
     return {
       message: `Eventos en ciudad '${ciudad}' obtenidos exitosamente`,
@@ -260,6 +301,122 @@ export class EventosService {
     return {
       message: 'Evento eliminado exitosamente',
       status: 'success',
+    };
+  }
+
+  // ========== MÉTODOS PARA USUARIOS LOGUEADOS (con bandera inscrito) ==========
+  // NOTA: Estos métodos traen TODOS los eventos sin filtrar, solo agregan la bandera inscrito
+
+  /**
+   * Obtiene todos los eventos con la bandera inscrito para un usuario específico
+   */
+  async findAllWithInscrito(runnerUID: string) {
+    const eventos = await this.prisma.eventos.findMany({
+      orderBy: {
+        FechaEvento: 'asc',
+      },
+    });
+
+    const eventosTransformados = await this.transformEventos(eventos, runnerUID);
+
+    return {
+      message: 'Eventos obtenidos exitosamente',
+      status: 'success',
+      total: eventosTransformados.length,
+      eventos: eventosTransformados,
+    };
+  }
+
+  /**
+   * Obtiene un evento por ID con la bandera inscrito para un usuario específico
+   */
+  async findOneWithInscrito(id: number, runnerUID: string) {
+    const evento = await this.prisma.eventos.findUnique({
+      where: { EventoID: id },
+    });
+
+    if (!evento) {
+      throw new NotFoundException(`Evento con ID ${id} no encontrado`);
+    }
+
+    const inscrito = await this.verificarInscripcion(id, runnerUID);
+    
+    const eventoTransformado = {
+      ...evento,
+      HoraEvento: this.extractHora(evento.HoraEvento),
+      inscrito,
+    };
+
+    return {
+      message: 'Evento obtenido exitosamente',
+      status: 'success',
+      evento: eventoTransformado,
+    };
+  }
+
+  /**
+   * Obtiene TODOS los eventos con la bandera inscrito (ignora el parámetro estado)
+   * El parámetro estado solo se usa para mantener la misma estructura del endpoint
+   */
+  async findByEstadoWithInscrito(estado: string, runnerUID: string) {
+    // Traer TODOS los eventos sin filtrar por estado
+    const eventos = await this.prisma.eventos.findMany({
+      orderBy: {
+        FechaEvento: 'asc',
+      },
+    });
+
+    const eventosTransformados = await this.transformEventos(eventos, runnerUID);
+
+    return {
+      message: 'Eventos obtenidos exitosamente',
+      status: 'success',
+      total: eventosTransformados.length,
+      eventos: eventosTransformados,
+    };
+  }
+
+  /**
+   * Obtiene TODOS los eventos con la bandera inscrito (ignora el parámetro pais)
+   * El parámetro pais solo se usa para mantener la misma estructura del endpoint
+   */
+  async findByPaisWithInscrito(pais: string, runnerUID: string) {
+    // Traer TODOS los eventos sin filtrar por país
+    const eventos = await this.prisma.eventos.findMany({
+      orderBy: {
+        FechaEvento: 'asc',
+      },
+    });
+
+    const eventosTransformados = await this.transformEventos(eventos, runnerUID);
+
+    return {
+      message: 'Eventos obtenidos exitosamente',
+      status: 'success',
+      total: eventosTransformados.length,
+      eventos: eventosTransformados,
+    };
+  }
+
+  /**
+   * Obtiene TODOS los eventos con la bandera inscrito (ignora el parámetro ciudad)
+   * El parámetro ciudad solo se usa para mantener la misma estructura del endpoint
+   */
+  async findByCiudadWithInscrito(ciudad: string, runnerUID: string) {
+    // Traer TODOS los eventos sin filtrar por ciudad
+    const eventos = await this.prisma.eventos.findMany({
+      orderBy: {
+        FechaEvento: 'asc',
+      },
+    });
+
+    const eventosTransformados = await this.transformEventos(eventos, runnerUID);
+
+    return {
+      message: 'Eventos obtenidos exitosamente',
+      status: 'success',
+      total: eventosTransformados.length,
+      eventos: eventosTransformados,
     };
   }
 }

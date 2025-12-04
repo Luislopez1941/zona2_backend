@@ -1,4 +1,4 @@
-import { PrismaClient, promociones_TipoPromo, promociones_Estatus, inscripciones_PagoEstado, inscripciones_TallaPlayera, subscriptions_PlanCode, subscriptions_BillingCycle, subscriptions_Status, organizadores_Estatus } from '@prisma/client';
+import { PrismaClient, promociones_TipoPromo, promociones_Estatus, inscripciones_PagoEstado, inscripciones_TallaPlayera, subscriptions_PlanCode, subscriptions_BillingCycle, subscriptions_Status, organizadores_Estatus, equipos_ProgramasDisponibles, equipos_NivelEquipo, equipos_Certificacion } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -1406,17 +1406,30 @@ async function main() {
       equipoLuis = await prisma.equipos.create({
         data: {
           RunnerUID: runnerUID1,
-          NombreEquipo: 'Corredores de Mérida',
-          AliasEquipo: 'MERIDA_RUN',
+          Logo: null, // Logo opcional, se puede agregar después
           Contacto: 'Luis López',
           Celular: '9982355989',
           Correo: 'Luislopez@gmail.com',
+          NombreEquipo: 'Corredores de Mérida',
+          AliasEquipo: 'MERIDA_RUN',
+          RFC: null, // RFC opcional
+          Descripcion: 'Equipo de corredores de Mérida',
           Ciudad: 'Mérida',
           Estado: 'Yucatán',
           Pais: 'México',
-          Descripcion: 'Equipo de corredores de Mérida',
+          LugarEntrenamiento: 'Parque de la Mejorada, Mérida',
           Disciplinas: 'Carrera, Trail Running',
+          HorarioEntrenamiento: new Date('1970-01-01T06:00:00Z'), // 6:00 AM
           AtletasActivos: 1,
+          EntrenadoresTotales: 1,
+          ProgramasDisponibles: equipos_ProgramasDisponibles.Ambos,
+          EntrenadoresEspecialidad: 'Carrera de calle, Trail Running',
+          NivelEquipo: equipos_NivelEquipo.Intermedio,
+          Certificacion: equipos_Certificacion.Independiente,
+          IntegracionZona2: true,
+          CostoMensual: 500.00,
+          ContactoWhatsApp: '9982355989',
+          RedSocial: 'https://www.facebook.com/corredoresmerida',
           Activo: true,
         },
       });
@@ -1517,17 +1530,30 @@ async function main() {
       equipoMaria = await prisma.equipos.create({
         data: {
           RunnerUID: runnerUIDMaria,
-          NombreEquipo: 'Corredoras de Cancún',
-          AliasEquipo: 'CANCUN_RUN',
+          Logo: null, // Logo opcional, se puede agregar después
           Contacto: 'María García',
           Celular: '9991234567',
           Correo: 'mariagarcia@gmail.com',
+          NombreEquipo: 'Corredoras de Cancún',
+          AliasEquipo: 'CANCUN_RUN',
+          RFC: null, // RFC opcional
+          Descripcion: 'Equipo de corredoras de Cancún',
           Ciudad: 'Cancún',
           Estado: 'Quintana Roo',
           Pais: 'México',
-          Descripcion: 'Equipo de corredoras de Cancún',
+          LugarEntrenamiento: 'Playa Delfines, Cancún',
           Disciplinas: 'Carrera, Playa',
+          HorarioEntrenamiento: new Date('1970-01-01T06:30:00Z'), // 6:30 AM
           AtletasActivos: 1,
+          EntrenadoresTotales: 1,
+          ProgramasDisponibles: equipos_ProgramasDisponibles.Digital,
+          EntrenadoresEspecialidad: 'Carrera de playa, Running',
+          NivelEquipo: equipos_NivelEquipo.Recreativo,
+          Certificacion: equipos_Certificacion.Independiente,
+          IntegracionZona2: true,
+          CostoMensual: 400.00,
+          ContactoWhatsApp: '9991234567',
+          RedSocial: 'https://www.instagram.com/corredorascancun',
           Activo: true,
         },
       });
@@ -1634,18 +1660,30 @@ async function main() {
         equipoOrgFinal = await prisma.equipos.create({
           data: {
             RunnerUID: organizadorUIDFinal,
-            NombreEquipo: 'Equipo Eventos Deportivos Mérida',
-            AliasEquipo: 'EDM_TEAM',
+            Logo: null, // Logo opcional, se puede agregar después
             Contacto: 'Carlos Méndez',
             Celular: '9987654321',
             Correo: 'carlos.mendez@eventos.com',
+            NombreEquipo: 'Equipo Eventos Deportivos Mérida',
+            AliasEquipo: 'EDM_TEAM',
+            RFC: 'EDM123456789',
+            Descripcion: 'Equipo oficial de Eventos Deportivos Mérida',
             Ciudad: 'Mérida',
             Estado: 'Yucatán',
             Pais: 'México',
-            Descripcion: 'Equipo oficial de Eventos Deportivos Mérida',
+            LugarEntrenamiento: 'Centro Deportivo Mérida, Calle 60 x 47',
             Disciplinas: 'Carrera, Trail Running, Maratón',
+            HorarioEntrenamiento: new Date('1970-01-01T05:30:00Z'), // 5:30 AM
             AtletasActivos: 0,
             EntrenadoresTotales: 2,
+            ProgramasDisponibles: equipos_ProgramasDisponibles.Ambos,
+            EntrenadoresEspecialidad: 'Maratón, Trail Running, Ultra Running',
+            NivelEquipo: equipos_NivelEquipo.Competitivo,
+            Certificacion: equipos_Certificacion.Verificado,
+            IntegracionZona2: true,
+            CostoMensual: 800.00,
+            ContactoWhatsApp: '9987654321',
+            RedSocial: 'https://www.facebook.com/eventosdeportivosmerida',
             Activo: true,
           },
         });

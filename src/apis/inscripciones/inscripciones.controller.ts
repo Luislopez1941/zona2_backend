@@ -12,9 +12,9 @@ export class InscripcionesController {
     return this.inscripcionesService.create(createInscripcioneDto);
   }
 
-  @Get()
-  findAll() {
-    return this.inscripcionesService.findAll();
+  @Get('get-by-runner/:runnerUID')
+  findByRunnerUID(@Param('runnerUID') runnerUID: string) {
+    return this.inscripcionesService.findByRunnerUID(runnerUID);
   }
 
   @Get(':id')
