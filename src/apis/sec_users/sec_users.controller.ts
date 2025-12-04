@@ -74,6 +74,11 @@ interface RequestWithUser extends Request {
     return this.secUsersService.forgetPassword(identifier);
   }
 
+  @Get('get-by-id/:id')
+  getById(@Param('id') id: string) {
+    return this.secUsersService.getById(id);
+  }
+
   @Post('verify-recovery-code')
   verifyRecoveryCode(@Body() verifyRecoveryCodeDto: VerifyRecoveryCodeDto) {
     return this.secUsersService.verifyRecoveryCode(
