@@ -73,8 +73,22 @@ export class PecersService {
     };
   }
 
-  findAll() {
-    return `This action returns all pecers`;
+  async findAll() {
+    const pacers = await this.prisma.pacers.findMany({
+      where: {
+        PacerActivo: true,
+      },
+      orderBy: {
+        NombreCompleto: 'asc',
+      },
+    });
+
+    return {
+      message: 'Pacers obtenidos exitosamente',
+      status: 'success',
+      total: pacers.length,
+      pacers,
+    };
   }
 
   findOne(id: number) {
