@@ -571,6 +571,44 @@ export class SecUsersService {
     });
   }
 
+  /**
+   * Obtiene todos los usuarios activos sin contraseñas
+   */
+  async getAll() {
+    const users = await this.prisma.sec_users.findMany({
+      where: {
+        active: 'Y',
+      },
+      orderBy: {
+        FechaRegistro: 'desc',
+      },
+      select: {
+        RunnerUID: true,
+        AliasRunner: true,
+        name: true,
+        login: true,
+        phone: true,
+        email: true,
+        TipoMembresia: true,
+        Ciudad: true,
+        Estado: true,
+        Pais: true,
+        NivelRunner: true,
+        WalletPuntos: true,
+        WalletPuntosI: true,
+        FechaRegistro: true,
+        picture: true,
+      },
+    });
+
+    return {
+      message: 'Usuarios obtenidos exitosamente',
+      status: 'success',
+      total: users.length,
+      users,
+    };
+  }
+
   async findOne(login: string) {
     const user = await this.prisma.sec_users.findUnique({
       where: { login: login },
