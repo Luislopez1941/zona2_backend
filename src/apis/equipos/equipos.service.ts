@@ -71,7 +71,7 @@ export class EquiposService {
     // Convertir Logo (Buffer) a base64 si existe
     const equiposConLogo = equipos.map((equipo) => ({
       ...equipo,
-      Logo: equipo.Logo ? Buffer.from(equipo.Logo).toString('base64') : null,
+      Logo: equipo.Logo ? `data:image/png;base64,${Buffer.from(equipo.Logo).toString('base64')}` : null,
     }));
 
     return {
@@ -124,7 +124,7 @@ export class EquiposService {
     // Convertir Logo (Buffer) a base64 si existe
     const equipoConLogo = {
       ...equipo,
-      Logo: equipo.Logo ? Buffer.from(equipo.Logo).toString('base64') : null,
+      Logo: equipo.Logo ? `data:image/png;base64,${Buffer.from(equipo.Logo).toString('base64')}` : null,
     };
 
     return {
@@ -295,7 +295,7 @@ export class EquiposService {
     // Convertir Logo (Buffer) a base64 si existe
     const equiposConLogo = equipos.map((equipo) => ({
       ...equipo,
-      Logo: equipo.Logo ? Buffer.from(equipo.Logo).toString('base64') : null,
+      Logo: equipo.Logo ? `data:image/png;base64,${Buffer.from(equipo.Logo).toString('base64')}` : null,
     }));
 
     return {
@@ -354,7 +354,7 @@ export class EquiposService {
     // Convertir Logo (Buffer) a base64 si existe
     const equiposConLogo = equipos.map((equipo) => ({
       ...equipo,
-      Logo: equipo.Logo ? Buffer.from(equipo.Logo).toString('base64') : null,
+      Logo: equipo.Logo ? `data:image/png;base64,${Buffer.from(equipo.Logo).toString('base64')}` : null,
     }));
 
     return {
@@ -413,7 +413,7 @@ export class EquiposService {
     // Convertir Logo (Buffer) a base64 si existe
     const equiposConLogo = equipos.map((equipo) => ({
       ...equipo,
-      Logo: equipo.Logo ? Buffer.from(equipo.Logo).toString('base64') : null,
+      Logo: equipo.Logo ? `data:image/png;base64,${Buffer.from(equipo.Logo).toString('base64')}` : null,
     }));
 
     return {
@@ -472,7 +472,7 @@ export class EquiposService {
     // Convertir Logo (Buffer) a base64 si existe
     const equiposConLogo = equipos.map((equipo) => ({
       ...equipo,
-      Logo: equipo.Logo ? Buffer.from(equipo.Logo).toString('base64') : null,
+      Logo: equipo.Logo ? `data:image/png;base64,${Buffer.from(equipo.Logo).toString('base64')}` : null,
     }));
 
     return {
