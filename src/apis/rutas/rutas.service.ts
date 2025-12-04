@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateRutaDto } from './dto/create-ruta.dto';
 import { UpdateRutaDto } from './dto/update-ruta.dto';
@@ -19,33 +19,19 @@ export class RutasService {
       orderBy: {
         FechaCreacion: 'desc',
       },
-      select: {
-        RutaID: true,
-        RunnerUID: true,
-        NombreRuta: true,
-        Descripcion: true,
-        Disciplina: true,
-        DistanciaKM: true,
-        ElevacionM: true,
-        Dificultad: true,
-        DuracionEstimadoMin: true,
-        Ciudad: true,
-        Estado: true,
-        Pais: true,
-        GoogleMaps: true,
-        Estatus: true,
-        FechaCreacion: true,
-        FechaActualizacion: true,
-        GPXfile_name: true,
-        // No incluir GPXfile (archivo binario) en la lista para evitar payload grande
-      },
     });
+
+    // Convertir GPXfile (Buffer) a base64 si existe
+    const rutasConGPX = rutas.map((ruta) => ({
+      ...ruta,
+      GPXfile: ruta.GPXfile ? Buffer.from(ruta.GPXfile).toString('base64') : null,
+    }));
 
     return {
       message: 'Rutas obtenidas exitosamente',
       status: 'success',
-      total: rutas.length,
-      rutas,
+      total: rutasConGPX.length,
+      rutas: rutasConGPX,
     };
   }
 
@@ -61,34 +47,20 @@ export class RutasService {
       orderBy: {
         FechaCreacion: 'desc',
       },
-      select: {
-        RutaID: true,
-        RunnerUID: true,
-        NombreRuta: true,
-        Descripcion: true,
-        Disciplina: true,
-        DistanciaKM: true,
-        ElevacionM: true,
-        Dificultad: true,
-        DuracionEstimadoMin: true,
-        Ciudad: true,
-        Estado: true,
-        Pais: true,
-        GoogleMaps: true,
-        Estatus: true,
-        FechaCreacion: true,
-        FechaActualizacion: true,
-        GPXfile_name: true,
-        // No incluir GPXfile (archivo binario) en la lista para evitar payload grande
-      },
     });
+
+    // Convertir GPXfile (Buffer) a base64 si existe
+    const rutasConGPX = rutas.map((ruta) => ({
+      ...ruta,
+      GPXfile: ruta.GPXfile ? Buffer.from(ruta.GPXfile).toString('base64') : null,
+    }));
 
     return {
       message: 'Rutas obtenidas exitosamente',
       status: 'success',
-      total: rutas.length,
+      total: rutasConGPX.length,
       pais,
-      rutas,
+      rutas: rutasConGPX,
     };
   }
 
@@ -104,34 +76,20 @@ export class RutasService {
       orderBy: {
         FechaCreacion: 'desc',
       },
-      select: {
-        RutaID: true,
-        RunnerUID: true,
-        NombreRuta: true,
-        Descripcion: true,
-        Disciplina: true,
-        DistanciaKM: true,
-        ElevacionM: true,
-        Dificultad: true,
-        DuracionEstimadoMin: true,
-        Ciudad: true,
-        Estado: true,
-        Pais: true,
-        GoogleMaps: true,
-        Estatus: true,
-        FechaCreacion: true,
-        FechaActualizacion: true,
-        GPXfile_name: true,
-        // No incluir GPXfile (archivo binario) en la lista para evitar payload grande
-      },
     });
+
+    // Convertir GPXfile (Buffer) a base64 si existe
+    const rutasConGPX = rutas.map((ruta) => ({
+      ...ruta,
+      GPXfile: ruta.GPXfile ? Buffer.from(ruta.GPXfile).toString('base64') : null,
+    }));
 
     return {
       message: 'Rutas obtenidas exitosamente',
       status: 'success',
-      total: rutas.length,
+      total: rutasConGPX.length,
       ciudad,
-      rutas,
+      rutas: rutasConGPX,
     };
   }
 
@@ -147,39 +105,43 @@ export class RutasService {
       orderBy: {
         FechaCreacion: 'desc',
       },
-      select: {
-        RutaID: true,
-        RunnerUID: true,
-        NombreRuta: true,
-        Descripcion: true,
-        Disciplina: true,
-        DistanciaKM: true,
-        ElevacionM: true,
-        Dificultad: true,
-        DuracionEstimadoMin: true,
-        Ciudad: true,
-        Estado: true,
-        Pais: true,
-        GoogleMaps: true,
-        Estatus: true,
-        FechaCreacion: true,
-        FechaActualizacion: true,
-        GPXfile_name: true,
-        // No incluir GPXfile (archivo binario) en la lista para evitar payload grande
-      },
     });
+
+    // Convertir GPXfile (Buffer) a base64 si existe
+    const rutasConGPX = rutas.map((ruta) => ({
+      ...ruta,
+      GPXfile: ruta.GPXfile ? Buffer.from(ruta.GPXfile).toString('base64') : null,
+    }));
 
     return {
       message: 'Rutas obtenidas exitosamente',
       status: 'success',
-      total: rutas.length,
+      total: rutasConGPX.length,
       estado,
-      rutas,
+      rutas: rutasConGPX,
     };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} ruta`;
+  async findOne(id: number) {
+    const ruta = await this.prisma.rutas.findUnique({
+      where: { RutaID: id },
+    });
+
+    if (!ruta) {
+      throw new NotFoundException(`Ruta con ID ${id} no encontrada`);
+    }
+
+    // Convertir GPXfile (Buffer) a base64 si existe
+    const rutaConGPX = {
+      ...ruta,
+      GPXfile: ruta.GPXfile ? Buffer.from(ruta.GPXfile).toString('base64') : null,
+    };
+
+    return {
+      message: 'Ruta obtenida exitosamente',
+      status: 'success',
+      ruta: rutaConGPX,
+    };
   }
 
   update(id: number, updateRutaDto: UpdateRutaDto) {
