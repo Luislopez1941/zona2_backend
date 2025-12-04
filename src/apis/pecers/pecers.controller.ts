@@ -3,7 +3,7 @@ import { PecersService } from './pecers.service';
 import { CreatePecerDto } from './dto/create-pecer.dto';
 import { UpdatePecerDto } from './dto/update-pecer.dto';
 
-@Controller('pecers')
+@Controller('pacers')
 export class PecersController {
   constructor(private readonly pecersService: PecersService) {}
 
