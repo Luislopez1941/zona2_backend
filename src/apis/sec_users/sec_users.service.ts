@@ -851,10 +851,25 @@ export class SecUsersService {
     // Retornar usuario sin la contraseña
     const { pswd, ...userWithoutPassword } = user;
     
+    // Si el usuario es un pacer (TipoMembresia === 'P'), obtener información de la tabla pacers
+    let pacerInfo: any = null;
+    if (userWithoutPassword.TipoMembresia === 'P' && userWithoutPassword.RunnerUID) {
+      const pacer = await this.prisma.pacers.findFirst({
+        where: {
+          RunnerUID: userWithoutPassword.RunnerUID,
+        },
+      });
+      
+      if (pacer) {
+        pacerInfo = pacer;
+      }
+    }
+    
     return {
       message: 'Usuario obtenido exitosamente',
       status: 'success',
       user: userWithoutPassword,
+      pacer: pacerInfo, // Información del pacer si TipoMembresia es 'P'
     };
   }
 

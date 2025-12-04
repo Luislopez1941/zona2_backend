@@ -76,4 +76,9 @@ export class CreatePecerDto {
   @IsOptional()
   @IsNumber()
   Tarifabase?: number;
+
+  @ApiPropertyOptional({ description: 'ID del PaymentIntent de Stripe para verificar el pago' })
+  @IsOptional()
+  @IsString()
+  paymentIntentId?: string;
 }

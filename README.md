@@ -34,18 +34,37 @@ Crea un archivo `.env` en la raíz del proyecto:
 ```env
 DATABASE_URL="mysql://USUARIO:CONTRASEÑA@HOST:PUERTO/NOMBRE_BASE_DATOS"
 CLICKATELL_AUTHORIZATION_TOKEN="tu_token_de_autorizacion_clickatell"
+STRIPE_SECRET_KEY="sk_test_..."
+STRIPE_PUBLISHABLE_KEY="pk_test_..."
+STRIPE_WEBHOOK_SECRET="whsec_..."
+PORT=4000
+JWT_SECRET="tu_jwt_secret_aqui"
 ```
 
 **Ejemplo:**
 ```env
 DATABASE_URL="mysql://root:zona123@localhost:3306/zona_2"
 CLICKATELL_AUTHORIZATION_TOKEN="tu_token_de_autorizacion_clickatell"
+STRIPE_SECRET_KEY="sk_test_51AbCdEfGhIjKlMnOpQrStUvWxYz1234567890"
+STRIPE_PUBLISHABLE_KEY="pk_test_51AbCdEfGhIjKlMnOpQrStUvWxYz1234567890"
+STRIPE_WEBHOOK_SECRET="whsec_1234567890abcdef"
+PORT=4000
+JWT_SECRET="mi_secreto_jwt_super_seguro"
 ```
 
-**Formato:**
-- `DATABASE_URL`: `mysql://USUARIO:CONTRASEÑA@HOST:PUERTO/NOMBRE_BASE_DATOS`
-- `CLICKATELL_AUTHORIZATION_TOKEN`: Token de autorización de Clickatell (se envía directamente sin "Bearer")
-- `CLICKATELL_API_KEY`: Alternativa, también aceptada (se usa si no está CLICKATELL_AUTHORIZATION_TOKEN)
+**Variables de Entorno:**
+
+- **DATABASE_URL**: `mysql://USUARIO:CONTRASEÑA@HOST:PUERTO/NOMBRE_BASE_DATOS`
+- **CLICKATELL_AUTHORIZATION_TOKEN**: Token de autorización de Clickatell (se envía directamente sin "Bearer")
+- **CLICKATELL_API_KEY**: Alternativa, también aceptada (se usa si no está CLICKATELL_AUTHORIZATION_TOKEN)
+- **STRIPE_SECRET_KEY**: Clave secreta de Stripe para operaciones del servidor (obtener en https://dashboard.stripe.com/apikeys)
+  - Formato: `sk_test_...` (modo test) o `sk_live_...` (modo producción)
+- **STRIPE_PUBLISHABLE_KEY**: Clave pública de Stripe (opcional, para el frontend)
+  - Formato: `pk_test_...` (modo test) o `pk_live_...` (modo producción)
+- **STRIPE_WEBHOOK_SECRET**: Secreto del webhook de Stripe (opcional, para validar webhooks)
+  - Formato: `whsec_...`
+- **PORT**: Puerto del servidor (default: 4000)
+- **JWT_SECRET**: Secreto para firmar tokens JWT (si se usa autenticación JWT)
 
 ### 2. Instalar Dependencias
 
