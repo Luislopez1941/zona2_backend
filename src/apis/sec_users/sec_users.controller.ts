@@ -60,6 +60,11 @@ interface RequestWithUser extends Request {
     return this.secUsersService.me(req.user.login);
   }
 
+  @Get('get-all')
+  getAll() {
+    return this.secUsersService.getAll();
+  }
+
   @Post('send-recovery-code')
   forgetPassword(@Body() forgetPasswordDto: ForgetPasswordDto) {
     // Usar login si está presente, sino usar phone
