@@ -1,11 +1,19 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { StripeService } from '../../common/services/stripe.service';
 import { CreateEventoDto } from './dto/create-evento.dto';
 import { UpdateEventoDto } from './dto/update-evento.dto';
+import { CreatePaymentEventoDto } from './dto/create-payment-evento.dto';
+import { ConfirmPaymentEventoDto } from './dto/confirm-payment-evento.dto';
 
 @Injectable()
 export class EventosService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(EventosService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly stripeService: StripeService,
+  ) {}
 
   // Función auxiliar para extraer solo la hora de HoraEvento
   private extractHora(horaEvento: Date | string | null): string | null {
@@ -418,5 +426,215 @@ export class EventosService {
       total: eventosTransformados.length,
       eventos: eventosTransformados,
     };
+  }
+
+  // ========== MÉTODOS DE PAGO CON STRIPE ==========
+
+  /**
+   * Crea un PaymentIntent de Stripe para el pago de un evento
+   * Este endpoint solo crea el PaymentIntent, no procesa el pago
+   * El frontend debe usar el clientSecret para confirmar el pago
+   */
+  async createPaymentIntent(createPaymentEventoDto: CreatePaymentEventoDto) {
+    const { RunnerUID, EventoID, amount, currency = 'mxn' } = createPaymentEventoDto;
+
+    this.logger.log(`Creating payment intent for evento - RunnerUID: ${RunnerUID}, EventoID: ${EventoID}, amount: ${amount}, currency: ${currency}`);
+
+    // Validar amount
+    if (!amount || amount <= 0) {
+      this.logger.error(`Invalid amount: ${amount}`);
+      throw new BadRequestException('El monto debe ser mayor a 0');
+    }
+
+    // Normalizar currency a minúsculas
+    const normalizedCurrency = currency.toLowerCase();
+
+    // Verificar que el usuario existe
+    const usuario = await this.prisma.sec_users.findFirst({
+      where: { RunnerUID },
+    });
+
+    if (!usuario) {
+      this.logger.error(`Usuario no encontrado: ${RunnerUID}`);
+      throw new NotFoundException(`Usuario con RunnerUID ${RunnerUID} no encontrado`);
+    }
+
+    // Verificar que el evento existe
+    const evento = await this.prisma.eventos.findUnique({
+      where: { EventoID },
+    });
+
+    if (!evento) {
+      this.logger.error(`Evento no encontrado: ${EventoID}`);
+      throw new NotFoundException(`Evento con ID ${EventoID} no encontrado`);
+    }
+
+    try {
+      // Crear el PaymentIntent (sin confirmar)
+      this.logger.log(`Calling Stripe API - amount: ${amount}, currency: ${normalizedCurrency}`);
+      const paymentIntent = await this.stripeService.createPaymentIntent(
+        amount,
+        normalizedCurrency,
+        {
+          RunnerUID,
+          EventoID: EventoID.toString(),
+          tipo: 'evento_inscripcion',
+          evento: evento.Titulo || `Evento ${EventoID}`,
+          usuario: usuario.name || RunnerUID,
+        },
+      );
+
+      this.logger.log(`PaymentIntent created successfully - ID: ${paymentIntent.id}`);
+
+      return {
+        message: 'PaymentIntent creado exitosamente',
+        status: 'success',
+        clientSecret: paymentIntent.client_secret,
+        paymentIntentId: paymentIntent.id,
+        amount: paymentIntent.amount,
+        currency: paymentIntent.currency,
+      };
+    } catch (error) {
+      this.logger.error(`Payment error: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  /**
+   * Confirma el pago de un evento usando el PaymentIntent y PaymentMethod
+   * El frontend debe crear el PaymentMethod con Stripe.js y enviar el paymentMethodId
+   * Este endpoint procesa el pago completo en el backend y crea la inscripción
+   */
+  async confirmPaymentEvento(confirmPaymentEventoDto: ConfirmPaymentEventoDto) {
+    const { 
+      paymentIntentId, 
+      paymentMethodId,
+      EventoID,
+      RunnerUID,
+      DistanciaElegida,
+      ...inscripcionData
+    } = confirmPaymentEventoDto;
+
+    this.logger.log(`Confirming payment for evento - paymentIntentId: ${paymentIntentId}, paymentMethodId: ${paymentMethodId}, EventoID: ${EventoID}`);
+
+    if (!paymentIntentId || !paymentMethodId) {
+      throw new BadRequestException('paymentIntentId y paymentMethodId son requeridos');
+    }
+
+    // Verificar que el evento existe
+    const evento = await this.prisma.eventos.findUnique({
+      where: { EventoID },
+    });
+
+    if (!evento) {
+      throw new NotFoundException(`Evento con ID ${EventoID} no encontrado`);
+    }
+
+    // Verificar que el usuario existe
+    const usuario = await this.prisma.sec_users.findFirst({
+      where: { RunnerUID },
+    });
+
+    if (!usuario) {
+      throw new NotFoundException(`Usuario con RunnerUID ${RunnerUID} no encontrado`);
+    }
+
+    // Verificar si el usuario ya está inscrito en este evento
+    const inscripcionExistente = await this.prisma.inscripciones.findFirst({
+      where: {
+        EventoID,
+        RunnerUID,
+      },
+    });
+
+    if (inscripcionExistente) {
+      throw new BadRequestException('El usuario ya está inscrito en este evento');
+    }
+
+    try {
+      // Confirmar el PaymentIntent con el PaymentMethod
+      this.logger.log(`Confirming PaymentIntent with Stripe API`);
+      const paymentIntent = await this.stripeService.confirmPaymentIntent(
+        paymentIntentId,
+        paymentMethodId,
+      );
+
+      this.logger.log(`Payment confirmed - ID: ${paymentIntent.id}, status: ${paymentIntent.status}`);
+
+      // Verificar que el pago fue exitoso
+      if (paymentIntent.status !== 'succeeded') {
+        this.logger.warn(`Payment not succeeded - status: ${paymentIntent.status}`);
+        throw new BadRequestException(
+          `El pago no se completó exitosamente. Estado: ${paymentIntent.status}`,
+        );
+      }
+
+      // ========== CREAR INSCRIPCIÓN ==========
+      this.logger.log(`Creating inscription for EventoID: ${EventoID}, RunnerUID: ${RunnerUID}`);
+
+      // Obtener información del usuario si no se proporciona
+      const runnerNombre = inscripcionData.RunnerNombre || usuario.name || null;
+      const runnerEmail = inscripcionData.RunnerEmail || usuario.email || null;
+      const runnerTelefono = inscripcionData.RunnerTelefono || usuario.phone || null;
+
+      // Calcular precios (el monto viene en centavos de Stripe, convertir a pesos)
+      const precioOriginal = evento.PrecioEvento ? Number(evento.PrecioEvento) : paymentIntent.amount / 100;
+      const puntosUsados = inscripcionData.PuntosUsados || 0;
+      const descuentoAplicado = inscripcionData.DescuentoAplicadoMXN || 0;
+
+      // El precio final es lo que se pagó (convertir de centavos a pesos)
+      const precioFinal = paymentIntent.amount / 100;
+
+      // Crear la inscripción
+      const inscripcion = await this.prisma.inscripciones.create({
+        data: {
+          EventoID: evento.EventoID,
+          OrgID: evento.OrgID,
+          FechaEvento: evento.FechaEvento,
+          RunnerUID,
+          RunnerNombre: runnerNombre,
+          RunnerEmail: runnerEmail,
+          RunnerTelefono: runnerTelefono,
+          Genero: inscripcionData.Genero || usuario.Genero || null,
+          FechaNacimiento: inscripcionData.FechaNacimiento
+            ? new Date(inscripcionData.FechaNacimiento)
+            : usuario.fechaNacimiento || null,
+          TallaPlayera: inscripcionData.TallaPlayera || null,
+          EquipoID: inscripcionData.EquipoID || usuario.equipoID || null,
+          DistanciaElegida,
+          CategoriaElegida: inscripcionData.CategoriaElegida || null,
+          Disciplina: inscripcionData.Disciplina || evento.TipoEvento || 'Carrera',
+          PrecioOriginal: precioOriginal,
+          PuntosUsados: puntosUsados,
+          DescuentoAplicadoMXN: descuentoAplicado,
+          PrecioFinal: precioFinal,
+          Moneda: evento.Moneda || paymentIntent.currency.toUpperCase(),
+          MetodoPago: 'Stripe',
+          PagoTransaccionID: paymentIntent.id,
+          PagoEstado: 'Pagado',
+          ContactoEmergencia: inscripcionData.ContactoEmergencia || usuario.EmergenciaContacto || null,
+          TelefonoEmergencia: inscripcionData.TelefonoEmergencia || usuario.EmergenciaCelular || null,
+          Ciudad: inscripcionData.Ciudad || evento.Ciudad || usuario.Ciudad || null,
+          Estado: inscripcionData.Estado || evento.Estado || usuario.Estado || null,
+          Pais: inscripcionData.Pais || usuario.Pais || 'México',
+          EstatusInscripcion: 'Inscrito',
+        },
+      });
+
+      this.logger.log(`Inscription created successfully - InscripcionID: ${inscripcion.InscripcionID}`);
+
+      return {
+        message: 'Pago confirmado e inscripción creada exitosamente',
+        status: 'success',
+        paymentIntentId: paymentIntent.id,
+        amount: paymentIntent.amount,
+        currency: paymentIntent.currency,
+        paymentStatus: paymentIntent.status,
+        inscripcion,
+      };
+    } catch (error) {
+      this.logger.error(`Payment confirmation error: ${error.message}`, error.stack);
+      throw error;
+    }
   }
 }

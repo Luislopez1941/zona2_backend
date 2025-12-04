@@ -1,15 +1,40 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, BadRequestException, Logger } from '@nestjs/common';
 import { PromocionesService } from './promociones.service';
 import { CreatePromocioneDto } from './dto/create-promocione.dto';
 import { UpdatePromocioneDto } from './dto/update-promocione.dto';
+import { CreatePaymentPromocionDto } from './dto/create-payment-promocion.dto';
+import { ConfirmPaymentPromocionDto } from './dto/confirm-payment-promocion.dto';
 
 @Controller('promociones')
 export class PromocionesController {
+  private readonly logger = new Logger(PromocionesController.name);
+
   constructor(private readonly promocionesService: PromocionesService) {}
 
   @Post()
   create(@Body() createPromocioneDto: CreatePromocioneDto) {
     return this.promocionesService.create(createPromocioneDto);
+  }
+
+  /**
+   * Crea un PaymentIntent de Stripe para pagar una promoción
+   * Este endpoint debe llamarse PRIMERO, antes de confirmar el pago
+   */
+  @Post('create-payment-promocion')
+  createPaymentIntent(@Body() createPaymentPromocionDto: CreatePaymentPromocionDto) {
+    this.logger.log(`Creating payment intent for promocion: ${JSON.stringify(createPaymentPromocionDto)}`);
+    return this.promocionesService.createPaymentIntent(createPaymentPromocionDto);
+  }
+
+  /**
+   * Confirma el pago de una promoción en el backend
+   * El frontend debe enviar el paymentMethodId creado con Stripe.js
+   * Este endpoint procesa el pago completo
+   */
+  @Post('confirm-payment-promocion')
+  confirmPaymentPromocion(@Body() confirmPaymentPromocionDto: ConfirmPaymentPromocionDto) {
+    this.logger.log(`Confirming payment for promocion: ${JSON.stringify(confirmPaymentPromocionDto)}`);
+    return this.promocionesService.confirmPaymentPromocion(confirmPaymentPromocionDto);
   }
 
   @Get('get-all')
@@ -51,7 +76,7 @@ export class PromocionesController {
     return this.promocionesService.findFirst10();
   }
 
-  @Get(':id')
+  @Get('get-by-id/:id')
   findOne(@Param('id') id: string) {
     // Validar que el ID sea numérico antes de parsear
     if (!/^\d+$/.test(id)) {
@@ -63,5 +88,14 @@ export class PromocionesController {
       throw new BadRequestException('El ID debe ser un número válido mayor a 0');
     }
     return this.promocionesService.findOne(promoId);
+  }
+
+  /**
+   * Canjea una promoción para un usuario
+   */
+  @Post('redeem')
+  redeemPromotion(@Body() data: { RunnerUID: string; PromoID: number }) {
+    this.logger.log(`Redeeming promotion: ${JSON.stringify(data)}`);
+    return this.promocionesService.redeemPromotion(data);
   }
 }

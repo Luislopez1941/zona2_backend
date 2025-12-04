@@ -1,20 +1,35 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, BadRequestException, Logger } from '@nestjs/common';
 import { PecersService } from './pecers.service';
 import { CreatePecerDto } from './dto/create-pecer.dto';
 import { UpdatePecerDto } from './dto/update-pecer.dto';
 import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
+import { ConfirmPaymentPacerDto } from './dto/confirm-payment-pacer.dto';
 
 @Controller('pacers')
 export class PecersController {
+  private readonly logger = new Logger(PecersController.name);
+
   constructor(private readonly pecersService: PecersService) {}
 
   /**
    * Crea un PaymentIntent de Stripe para pagar la membresía de pacer
-   * Este endpoint debe llamarse ANTES de crear el pacer
+   * Este endpoint debe llamarse PRIMERO, antes de confirmar el pago
    */
   @Post('create-payment-pacer')
   createPaymentIntent(@Body() createPaymentIntentDto: CreatePaymentIntentDto) {
+    this.logger.log(`Creating payment intent for pacer: ${JSON.stringify(createPaymentIntentDto)}`);
     return this.pecersService.createPaymentIntent(createPaymentIntentDto);
+  }
+
+  /**
+   * Confirma el pago de la membresía de pacer en el backend
+   * El frontend debe enviar el paymentMethodId creado con Stripe.js
+   * Este endpoint procesa el pago completo
+   */
+  @Post('confirm-payment-pacer')
+  confirmPaymentPacer(@Body() confirmPaymentPacerDto: ConfirmPaymentPacerDto) {
+    this.logger.log(`Confirming payment for pacer: ${JSON.stringify(confirmPaymentPacerDto)}`);
+    return this.pecersService.confirmPaymentPacer(confirmPaymentPacerDto);
   }
 
   /**

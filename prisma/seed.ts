@@ -1694,6 +1694,211 @@ async function main() {
 
   console.log('\n✅ Equipos e inscripciones completados exitosamente.');
 
+  // Crear equipos adicionales de ejemplo
+  console.log('\n⚽ Creando equipos adicionales de ejemplo...');
+  
+  const equiposExistentes = await prisma.equipos.count();
+  if (equiposExistentes < 10) {
+    const equiposAdicionales = [
+      {
+        Contacto: 'Roberto Martínez',
+        Celular: '5512345678',
+        Correo: 'clubatletas@gmail.com',
+        NombreEquipo: 'Club Atletas CDMX',
+        AliasEquipo: 'ATLETASCDMX',
+        Descripcion: 'Club de atletismo en la Ciudad de México, enfocado en carreras de calle y maratones.',
+        Ciudad: 'Ciudad de México',
+        Estado: 'Ciudad de México',
+        Pais: 'México',
+        LugarEntrenamiento: 'Bosque de Chapultepec',
+        Disciplinas: 'Carrera, Maratón, Medio Maratón',
+        HorarioEntrenamiento: new Date('1970-01-01T06:00:00Z'),
+        AtletasActivos: 45,
+        EntrenadoresTotales: 3,
+        ProgramasDisponibles: equipos_ProgramasDisponibles.Ambos,
+        EntrenadoresEspecialidad: 'Maratón, Velocidad, Resistencia',
+        NivelEquipo: equipos_NivelEquipo.Competitivo,
+        Certificacion: equipos_Certificacion.Verificado,
+        IntegracionZona2: true,
+        CostoMensual: 600.00,
+        ContactoWhatsApp: '5512345678',
+        RedSocial: 'https://www.instagram.com/clubatletascdmx',
+        Activo: true,
+      },
+      {
+        Contacto: 'Ana López',
+        Celular: '3312345678',
+        Correo: 'runnersguadalajara@gmail.com',
+        NombreEquipo: 'Runners Guadalajara',
+        AliasEquipo: 'RUNNERSGDL',
+        Descripcion: 'Comunidad de corredores en Guadalajara, todos los niveles bienvenidos.',
+        Ciudad: 'Guadalajara',
+        Estado: 'Jalisco',
+        Pais: 'México',
+        LugarEntrenamiento: 'Parque Metropolitano',
+        Disciplinas: 'Carrera, Trail Running',
+        HorarioEntrenamiento: new Date('1970-01-01T06:30:00Z'),
+        AtletasActivos: 32,
+        EntrenadoresTotales: 2,
+        ProgramasDisponibles: equipos_ProgramasDisponibles.Digital,
+        EntrenadoresEspecialidad: 'Carrera de calle, Trail',
+        NivelEquipo: equipos_NivelEquipo.Intermedio,
+        Certificacion: equipos_Certificacion.Independiente,
+        IntegracionZona2: true,
+        CostoMensual: 450.00,
+        ContactoWhatsApp: '3312345678',
+        RedSocial: 'https://www.facebook.com/runnersguadalajara',
+        Activo: true,
+      },
+      {
+        Contacto: 'Pedro Sánchez',
+        Celular: '8112345678',
+        Correo: 'clubmtyrunners@gmail.com',
+        NombreEquipo: 'MTY Runners Club',
+        AliasEquipo: 'MTYRUNNERSCLUB',
+        Descripcion: 'El club de corredores más grande de Monterrey, con entrenamientos profesionales.',
+        Ciudad: 'Monterrey',
+        Estado: 'Nuevo León',
+        Pais: 'México',
+        LugarEntrenamiento: 'Parque Fundidora',
+        Disciplinas: 'Carrera, Montaña, Trail Running',
+        HorarioEntrenamiento: new Date('1970-01-01T05:30:00Z'),
+        AtletasActivos: 58,
+        EntrenadoresTotales: 4,
+        ProgramasDisponibles: equipos_ProgramasDisponibles.Ambos,
+        EntrenadoresEspecialidad: 'Ultra Running, Montaña, Maratón',
+        NivelEquipo: equipos_NivelEquipo.Competitivo,
+        Certificacion: equipos_Certificacion.Verificado,
+        IntegracionZona2: true,
+        CostoMensual: 700.00,
+        ContactoWhatsApp: '8112345678',
+        RedSocial: 'https://www.instagram.com/mtyrunners',
+        Activo: true,
+      },
+      {
+        Contacto: 'Sofia Ramírez',
+        Celular: '2221234567',
+        Correo: 'trailpuebla@gmail.com',
+        NombreEquipo: 'Trail Runners Puebla',
+        AliasEquipo: 'TRAILPUEBLA',
+        Descripcion: 'Especialistas en trail running y carreras de montaña en Puebla.',
+        Ciudad: 'Puebla',
+        Estado: 'Puebla',
+        Pais: 'México',
+        LugarEntrenamiento: 'Parque Nacional La Malinche',
+        Disciplinas: 'Trail Running, Ultra Trail, Montaña',
+        HorarioEntrenamiento: new Date('1970-01-01T06:00:00Z'),
+        AtletasActivos: 28,
+        EntrenadoresTotales: 2,
+        ProgramasDisponibles: equipos_ProgramasDisponibles.Manual,
+        EntrenadoresEspecialidad: 'Trail Running, Ultra Trail',
+        NivelEquipo: equipos_NivelEquipo.Competitivo,
+        Certificacion: equipos_Certificacion.Independiente,
+        IntegracionZona2: true,
+        CostoMensual: 550.00,
+        ContactoWhatsApp: '2221234567',
+        RedSocial: 'https://www.instagram.com/trailpuebla',
+        Activo: true,
+      },
+      {
+        Contacto: 'Miguel Torres',
+        Celular: '6641234567',
+        Correo: 'bajacaliforniarunners@gmail.com',
+        NombreEquipo: 'Baja California Runners',
+        AliasEquipo: 'BAJARUNNERS',
+        Descripcion: 'Comunidad de corredores en Tijuana y Baja California.',
+        Ciudad: 'Tijuana',
+        Estado: 'Baja California',
+        Pais: 'México',
+        LugarEntrenamiento: 'Parque Morelos',
+        Disciplinas: 'Carrera, Cross Country',
+        HorarioEntrenamiento: new Date('1970-01-01T06:30:00Z'),
+        AtletasActivos: 22,
+        EntrenadoresTotales: 2,
+        ProgramasDisponibles: equipos_ProgramasDisponibles.Digital,
+        EntrenadoresEspecialidad: 'Carrera de calle, Cross Country',
+        NivelEquipo: equipos_NivelEquipo.Intermedio,
+        Certificacion: equipos_Certificacion.Independiente,
+        IntegracionZona2: true,
+        CostoMensual: 400.00,
+        ContactoWhatsApp: '6641234567',
+        RedSocial: 'https://www.facebook.com/bajarunners',
+        Activo: true,
+      },
+      {
+        Contacto: 'Laura Fernández',
+        Celular: '9511234567',
+        Correo: 'oaxacarunning@gmail.com',
+        NombreEquipo: 'Oaxaca Running Team',
+        AliasEquipo: 'OAXACARUN',
+        Descripcion: 'Equipo de running en Oaxaca, con entrenamientos adaptados a todos los niveles.',
+        Ciudad: 'Oaxaca',
+        Estado: 'Oaxaca',
+        Pais: 'México',
+        LugarEntrenamiento: 'Centro Histórico de Oaxaca',
+        Disciplinas: 'Carrera, Trail Running',
+        HorarioEntrenamiento: new Date('1970-01-01T06:00:00Z'),
+        AtletasActivos: 18,
+        EntrenadoresTotales: 1,
+        ProgramasDisponibles: equipos_ProgramasDisponibles.Manual,
+        EntrenadoresEspecialidad: 'Carrera recreativa, Trail',
+        NivelEquipo: equipos_NivelEquipo.Recreativo,
+        Certificacion: equipos_Certificacion.Independiente,
+        IntegracionZona2: true,
+        CostoMensual: 350.00,
+        ContactoWhatsApp: '9511234567',
+        RedSocial: 'https://www.instagram.com/oaxacarunning',
+        Activo: true,
+      },
+      {
+        Contacto: 'Fernando Díaz',
+        Celular: '4431234567',
+        Correo: 'moreliarunners@gmail.com',
+        NombreEquipo: 'Morelia Runners',
+        AliasEquipo: 'MORELIARUN',
+        Descripcion: 'Club de corredores de Morelia, entrenamientos semanales y participación en eventos.',
+        Ciudad: 'Morelia',
+        Estado: 'Michoacán',
+        Pais: 'México',
+        LugarEntrenamiento: 'Centro Histórico de Morelia',
+        Disciplinas: 'Carrera, Medio Maratón',
+        HorarioEntrenamiento: new Date('1970-01-01T06:30:00Z'),
+        AtletasActivos: 25,
+        EntrenadoresTotales: 2,
+        ProgramasDisponibles: equipos_ProgramasDisponibles.Ambos,
+        EntrenadoresEspecialidad: 'Carrera de calle, Resistencia',
+        NivelEquipo: equipos_NivelEquipo.Intermedio,
+        Certificacion: equipos_Certificacion.Independiente,
+        IntegracionZona2: true,
+        CostoMensual: 400.00,
+        ContactoWhatsApp: '4431234567',
+        RedSocial: 'https://www.facebook.com/moreliarunners',
+        Activo: true,
+      },
+    ];
+
+    for (const equipo of equiposAdicionales) {
+      // Verificar si ya existe un equipo con el mismo nombre
+      const equipoExistente = await prisma.equipos.findFirst({
+        where: { NombreEquipo: equipo.NombreEquipo },
+      });
+
+      if (!equipoExistente) {
+        await prisma.equipos.create({
+          data: equipo,
+        });
+      }
+    }
+
+    console.log(`✅ Equipos adicionales creados exitosamente.`);
+    console.log('⚽ Equipos creados:');
+    equiposAdicionales.forEach((equipo, index) => {
+      console.log(`   ${index + 1}. ${equipo.NombreEquipo} - ${equipo.Ciudad}, ${equipo.Estado}`);
+    });
+  } else {
+    console.log(`⚠️  Ya existen ${equiposExistentes} equipos en la base de datos.`);
+  }
+
   // Crear rutas de ejemplo
   console.log('\n🗺️  Creando rutas de ejemplo...');
   

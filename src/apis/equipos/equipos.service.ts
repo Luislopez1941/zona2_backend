@@ -1,12 +1,20 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { StripeService } from '../../common/services/stripe.service';
 import { CreateEquipoDto } from './dto/create-equipo.dto';
 import { UpdateEquipoDto } from './dto/update-equipo.dto';
 import { JoinATeamDto } from './dto/join-a-team.dto';
+import { CreatePaymentEquipoDto } from './dto/create-payment-equipo.dto';
+import { ConfirmPaymentEquipoDto } from './dto/confirm-payment-equipo.dto';
 
 @Injectable()
 export class EquiposService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(EquiposService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly stripeService: StripeService,
+  ) {}
 
   async create(createEquipoDto: CreateEquipoDto) {
     const equipo = await this.prisma.equipos.create({
@@ -474,5 +482,121 @@ export class EquiposService {
       runnerUID,
       equipos: equiposConLogo,
     };
+  }
+
+  // ========== MÉTODOS DE PAGO CON STRIPE ==========
+
+  /**
+   * Crea un PaymentIntent de Stripe para el pago de membresía de un equipo
+   * Este endpoint solo crea el PaymentIntent, no procesa el pago
+   * El frontend debe usar el clientSecret para confirmar el pago
+   */
+  async createPaymentIntent(createPaymentEquipoDto: CreatePaymentEquipoDto) {
+    const { RunnerUID, OrgID, amount, currency = 'mxn' } = createPaymentEquipoDto;
+
+    this.logger.log(`Creating payment intent for equipo - RunnerUID: ${RunnerUID}, OrgID: ${OrgID}, amount: ${amount}, currency: ${currency}`);
+
+    // Validar amount
+    if (!amount || amount <= 0) {
+      this.logger.error(`Invalid amount: ${amount}`);
+      throw new BadRequestException('El monto debe ser mayor a 0');
+    }
+
+    // Normalizar currency a minúsculas
+    const normalizedCurrency = currency.toLowerCase();
+
+    // Verificar que el usuario existe
+    const usuario = await this.prisma.sec_users.findFirst({
+      where: { RunnerUID },
+    });
+
+    if (!usuario) {
+      this.logger.error(`Usuario no encontrado: ${RunnerUID}`);
+      throw new NotFoundException(`Usuario con RunnerUID ${RunnerUID} no encontrado`);
+    }
+
+    // Verificar que el equipo existe
+    const equipo = await this.prisma.equipos.findUnique({
+      where: { OrgID },
+    });
+
+    if (!equipo) {
+      this.logger.error(`Equipo no encontrado: ${OrgID}`);
+      throw new NotFoundException(`Equipo con ID ${OrgID} no encontrado`);
+    }
+
+    try {
+      // Crear el PaymentIntent (sin confirmar)
+      this.logger.log(`Calling Stripe API - amount: ${amount}, currency: ${normalizedCurrency}`);
+      const paymentIntent = await this.stripeService.createPaymentIntent(
+        amount,
+        normalizedCurrency,
+        {
+          RunnerUID,
+          OrgID: OrgID.toString(),
+          tipo: 'equipo_membresia',
+          equipo: equipo.NombreEquipo || `Equipo ${OrgID}`,
+          usuario: usuario.name || RunnerUID,
+        },
+      );
+
+      this.logger.log(`PaymentIntent created successfully - ID: ${paymentIntent.id}`);
+
+      return {
+        message: 'PaymentIntent creado exitosamente',
+        status: 'success',
+        clientSecret: paymentIntent.client_secret,
+        paymentIntentId: paymentIntent.id,
+        amount: paymentIntent.amount,
+        currency: paymentIntent.currency,
+      };
+    } catch (error) {
+      this.logger.error(`Payment error: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  /**
+   * Confirma el pago de membresía de un equipo usando el PaymentIntent y PaymentMethod
+   * El frontend debe crear el PaymentMethod con Stripe.js y enviar el paymentMethodId
+   * Este endpoint procesa el pago completo en el backend
+   */
+  async confirmPaymentEquipo(confirmPaymentEquipoDto: ConfirmPaymentEquipoDto) {
+    const { paymentIntentId, paymentMethodId } = confirmPaymentEquipoDto;
+
+    this.logger.log(`Confirming payment for equipo - paymentIntentId: ${paymentIntentId}, paymentMethodId: ${paymentMethodId}`);
+
+    if (!paymentIntentId || !paymentMethodId) {
+      throw new BadRequestException('paymentIntentId y paymentMethodId son requeridos');
+    }
+
+    try {
+      // Confirmar el PaymentIntent con el PaymentMethod
+      this.logger.log(`Confirming PaymentIntent with Stripe API`);
+      const paymentIntent = await this.stripeService.confirmPaymentIntent(
+        paymentIntentId,
+        paymentMethodId,
+      );
+
+      this.logger.log(`Payment confirmed - ID: ${paymentIntent.id}, status: ${paymentIntent.status}`);
+
+      // Verificar que el pago fue exitoso
+      if (paymentIntent.status !== 'succeeded') {
+        this.logger.warn(`Payment not succeeded - status: ${paymentIntent.status}`);
+        throw new BadRequestException(
+          `El pago no se completó exitosamente. Estado: ${paymentIntent.status}`,
+        );
+      }
+
+      return {
+        exito: true,
+        message: 'Pago de membresía confirmado exitosamente',
+        status: 'success',
+        paymentIntentId: paymentIntent.id,
+      };
+    } catch (error) {
+      this.logger.error(`Payment confirmation error: ${error.message}`, error.stack);
+      throw error;
+    }
   }
 }

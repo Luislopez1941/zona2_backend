@@ -1,15 +1,40 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, BadRequestException, Logger } from '@nestjs/common';
 import { EventosService } from './eventos.service';
 import { CreateEventoDto } from './dto/create-evento.dto';
 import { UpdateEventoDto } from './dto/update-evento.dto';
+import { CreatePaymentEventoDto } from './dto/create-payment-evento.dto';
+import { ConfirmPaymentEventoDto } from './dto/confirm-payment-evento.dto';
 
 @Controller('eventos')
 export class EventosController {
+  private readonly logger = new Logger(EventosController.name);
+
   constructor(private readonly eventosService: EventosService) {}
 
   @Post()
   create(@Body() createEventoDto: CreateEventoDto) {
     return this.eventosService.create(createEventoDto);
+  }
+
+  /**
+   * Crea un PaymentIntent de Stripe para pagar la inscripción a un evento
+   * Este endpoint debe llamarse PRIMERO, antes de confirmar el pago
+   */
+  @Post('create-payment-method')
+  createPaymentIntent(@Body() createPaymentEventoDto: CreatePaymentEventoDto) {
+    this.logger.log(`Creating payment intent for evento: ${JSON.stringify(createPaymentEventoDto)}`);
+    return this.eventosService.createPaymentIntent(createPaymentEventoDto);
+  }
+
+  /**
+   * Confirma el pago de la inscripción a un evento en el backend
+   * El frontend debe enviar el paymentMethodId creado con Stripe.js
+   * Este endpoint procesa el pago completo
+   */
+  @Post('confirm-payment-method')
+  confirmPaymentEvento(@Body() confirmPaymentEventoDto: ConfirmPaymentEventoDto) {
+    this.logger.log(`Confirming payment for evento: ${JSON.stringify(confirmPaymentEventoDto)}`);
+    return this.eventosService.confirmPaymentEvento(confirmPaymentEventoDto);
   }
 
   @Get('get-all')
@@ -37,6 +62,7 @@ export class EventosController {
     return this.eventosService.findByCiudad(ciudad, runnerUID);
   }
 
+  
 
 
 
