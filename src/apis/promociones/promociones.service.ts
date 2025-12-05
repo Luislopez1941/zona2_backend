@@ -42,60 +42,45 @@ export class PromocionesService {
   }
 
   /**
-   * Devuelve las 10 primeras promociones activas con información del organizador
+   * Obtiene información del equipo u organizador basado en el RunnerUID y TipoMembresia
    */
-  async findFirst10() {
-    const promociones = await this.prisma.promociones.findMany({
-      where: {
-        Estatus: promociones_Estatus.Activa,
-      },
-      take: 10,
-      orderBy: {
-        FechaInicio: 'desc',
+  private async getInfoByRunnerUID(runnerUID: string | null) {
+    if (!runnerUID) return null;
+
+    // Consultar sec_users para obtener TipoMembresia
+    const usuario = await this.prisma.sec_users.findFirst({
+      where: { RunnerUID: runnerUID },
+      select: {
+        TipoMembresia: true,
       },
     });
 
-    // Obtener información de los organizadores
-    const promocionesConOrganizador = await Promise.all(
-      promociones.map(async (promocion) => {
-        const organizador = await this.prisma.organizadores.findUnique({
-          where: { OrgID: promocion.OrgID },
-          select: {
-            OrgID: true,
-            NombreComercial: true,
-            RazonSocial: true,
-            ContactoNombre: true,
-            ContactoEmail: true,
-            ContactoTelefono: true,
-            Ciudad: true,
-            Estado: true,
-            Pais: true,
-          },
-        });
+    if (!usuario || !usuario.TipoMembresia) return null;
 
-        return {
-          ...promocion,
-          organizador,
-        };
-      }),
-    );
+    // Si TipoMembresia es 'T' (equipo), consultar equipos
+    if (usuario.TipoMembresia === 'T') {
+      const equipo = await this.prisma.equipos.findFirst({
+        where: { RunnerUID: runnerUID },
+        select: {
+          OrgID: true,
+          NombreEquipo: true,
+          AliasEquipo: true,
+          Contacto: true,
+          Celular: true,
+          Correo: true,
+          Ciudad: true,
+          Estado: true,
+          Pais: true,
+          Logo: true,
+        },
+      });
+      return equipo ? { tipo: 'equipo', data: equipo } : null;
+    }
 
-    return {
-      message: 'Promociones obtenidas exitosamente',
-      status: 'success',
-      total: promocionesConOrganizador.length,
-      promociones: promocionesConOrganizador,
-    };
-  }
-
-  /**
-   * Devuelve todas las promociones con paginación opcional e información del organizador
-   */
-  async findAll(page?: number, limit?: number) {
-    // Función helper para obtener organizador
-    const getOrganizador = async (orgID: number) => {
-      return await this.prisma.organizadores.findUnique({
-        where: { OrgID: orgID },
+    // Si TipoMembresia es 'O' (organizador), consultar organizadores
+    if (usuario.TipoMembresia === 'O') {
+      const organizador = await this.prisma.organizadores.findFirst({
+        where: { RunnerUID: runnerUID },
         select: {
           OrgID: true,
           NombreComercial: true,
@@ -108,8 +93,50 @@ export class PromocionesService {
           Pais: true,
         },
       });
-    };
+      return organizador ? { tipo: 'organizador', data: organizador } : null;
+    }
 
+    return null;
+  }
+
+  /**
+   * Devuelve las 10 primeras promociones activas con información del organizador o equipo
+   */
+  async findFirst10() {
+    const promociones = await this.prisma.promociones.findMany({
+      where: {
+        Estatus: promociones_Estatus.Activa,
+      },
+      take: 10,
+      orderBy: {
+        FechaInicio: 'desc',
+      },
+    });
+
+    // Obtener información del organizador o equipo basado en RunnerUID
+    const promocionesConInfo = await Promise.all(
+      promociones.map(async (promocion) => {
+        const info = await this.getInfoByRunnerUID(promocion.RunnerUID);
+        return {
+          ...promocion,
+          organizador: info?.tipo === 'organizador' ? info.data : null,
+          equipo: info?.tipo === 'equipo' ? info.data : null,
+        };
+      }),
+    );
+
+    return {
+      message: 'Promociones obtenidas exitosamente',
+      status: 'success',
+      total: promocionesConInfo.length,
+      promociones: promocionesConInfo,
+    };
+  }
+
+  /**
+   * Devuelve todas las promociones con paginación opcional e información del organizador o equipo
+   */
+  async findAll(page?: number, limit?: number) {
     // Si no se pasan parámetros, traer todas las promociones
     if (!page && !limit) {
       const promociones = await this.prisma.promociones.findMany({
@@ -118,13 +145,14 @@ export class PromocionesService {
         },
       });
 
-      // Obtener información de los organizadores
-      const promocionesConOrganizador = await Promise.all(
+      // Obtener información del organizador o equipo basado en RunnerUID
+      const promocionesConInfo = await Promise.all(
         promociones.map(async (promocion) => {
-          const organizador = await getOrganizador(promocion.OrgID);
+          const info = await this.getInfoByRunnerUID(promocion.RunnerUID);
           return {
             ...promocion,
-            organizador,
+            organizador: info?.tipo === 'organizador' ? info.data : null,
+            equipo: info?.tipo === 'equipo' ? info.data : null,
           };
         }),
       );
@@ -132,8 +160,8 @@ export class PromocionesService {
       return {
         message: 'Promociones obtenidas exitosamente',
         status: 'success',
-        total: promocionesConOrganizador.length,
-        promociones: promocionesConOrganizador,
+        total: promocionesConInfo.length,
+        promociones: promocionesConInfo,
       };
     }
 
@@ -153,13 +181,14 @@ export class PromocionesService {
       this.prisma.promociones.count(),
     ]);
 
-    // Obtener información de los organizadores
-    const promocionesConOrganizador = await Promise.all(
+    // Obtener información del organizador o equipo basado en RunnerUID
+    const promocionesConInfo = await Promise.all(
       promociones.map(async (promocion) => {
-        const organizador = await getOrganizador(promocion.OrgID);
+        const info = await this.getInfoByRunnerUID(promocion.RunnerUID);
         return {
           ...promocion,
-          organizador,
+          organizador: info?.tipo === 'organizador' ? info.data : null,
+          equipo: info?.tipo === 'equipo' ? info.data : null,
         };
       }),
     );
@@ -177,7 +206,7 @@ export class PromocionesService {
         hasNextPage: pageNumber < totalPages,
         hasPrevPage: pageNumber > 1,
       },
-      promociones: promocionesConOrganizador,
+      promociones: promocionesConInfo,
     };
   }
 
@@ -190,28 +219,16 @@ export class PromocionesService {
       throw new NotFoundException(`Promoción con ID ${id} no encontrada`);
   }
 
-    // Obtener información del organizador
-    const organizador = await this.prisma.organizadores.findUnique({
-      where: { OrgID: promocion.OrgID },
-      select: {
-        OrgID: true,
-        NombreComercial: true,
-        RazonSocial: true,
-        ContactoNombre: true,
-        ContactoEmail: true,
-        ContactoTelefono: true,
-        Ciudad: true,
-        Estado: true,
-        Pais: true,
-      },
-    });
+    // Obtener información del organizador o equipo basado en RunnerUID
+    const info = await this.getInfoByRunnerUID(promocion.RunnerUID);
 
     return {
       message: 'Promoción obtenida exitosamente',
       status: 'success',
       promocion: {
         ...promocion,
-        organizador,
+        organizador: info?.tipo === 'organizador' ? info.data : null,
+        equipo: info?.tipo === 'equipo' ? info.data : null,
       },
     };
   }

@@ -22,10 +22,11 @@ import { ActividadZonasModule } from './apis/actividad_zonas/actividad_zonas.mod
 import { RutasModule } from './apis/rutas/rutas.module';
 import { InscripcionesModule } from './apis/inscripciones/inscripciones.module';
 import { BlogsModule } from './apis/blogs/blogs.module';
+import { RunnerPhotosModule } from './apis/runner_photos/runner_photos.module';
 
 
 @Module({
-  imports: [PrismaModule, SmsModule, SecUsersModule, ActividadesModule, ZonasModule, EstablecimientosModule, LoginModule, EventosModule, PromocionesModule, EstadosMexicoModule, PaisesModule, CiudadesMexicoModule, EquiposModule, PecersModule, FollowersModule, NotificacionesModule, ZonasActividadesModule, ActividadZonasModule, RutasModule, InscripcionesModule, BlogsModule],
+  imports: [PrismaModule, SmsModule, SecUsersModule, ActividadesModule, ZonasModule, EstablecimientosModule, LoginModule, EventosModule, PromocionesModule, EstadosMexicoModule, PaisesModule, CiudadesMexicoModule, EquiposModule, PecersModule, FollowersModule, NotificacionesModule, ZonasActividadesModule, ActividadZonasModule, RutasModule, InscripcionesModule, BlogsModule, RunnerPhotosModule],
   controllers: [AppController],
   providers: [AppService],
 })
