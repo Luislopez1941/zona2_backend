@@ -275,7 +275,7 @@ model distancias {
 model equipos {
   OrgID                    Int                           @id @default(autoincrement())
   RunnerUID                String?                       @db.Char(36)
-  Logo                     Bytes?                        @db.MediumBlob
+  Logo                     String?                       @db.Text
   Contacto                 String?                       @db.VarChar(100)
   Celular                  String?                       @db.VarChar(36)
   Correo                   String?                       @db.VarChar(255)
